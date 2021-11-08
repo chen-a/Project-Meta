@@ -1,0 +1,15 @@
+;; Assumes: lib/prelude.meta
+
+(define list-case
+  (lambda (cons-case nil-case)
+    (lambda (lst)
+      (if (null? lst)
+          nil-case
+          (cons-case (fst lst) (snd lst))))))
+
+(define length
+  (list-case (lambda (fst rest) (add 1 (length rest)))
+             0))
+
+(length '())
+(length '(1 2 3))

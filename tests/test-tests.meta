@@ -1,0 +1,4 @@
+;; Assumes: lib/test.meta
+
+(tests [1 1]
+       [1 2])

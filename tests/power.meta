@@ -1,0 +1,13 @@
+;; Assumes: lib/define.meta lib/arith.meta
+
+(defun (compute-power n x)
+  (if (eq? n 0) 1 {* $x $(compute-power (- n 1) x)}))
+
+(compute-power 2 'x)
+(compute-power 3 'x)
+
+(defun (power n)
+  (lambda (x)
+    $(compute-power n 'x)))
+
+((power 2) 4)

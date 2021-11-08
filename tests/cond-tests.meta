@@ -1,0 +1,13 @@
+;; Assumes: lib/test.meta lib/bool.meta
+
+(define silly
+  (lambda (n) (cond [(eq? n 0) '()]
+                    [(eq? n 1) '(())]
+                    [else '((()))])))
+
+(tests
+ [(silly 0) '()]
+ [(silly 1) '(())]
+ [(silly 2) '((()))]
+ [(silly 3) '((()))])
+

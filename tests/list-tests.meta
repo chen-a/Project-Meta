@@ -1,0 +1,4 @@
+;; Assumes: lib/list.meta lib/test.meta
+
+(tests
+ [(filter (lambda (x) (not (eq? 0 x))) '(0 1 2 0 3)) '(1 2 3)])

@@ -1,0 +1,37 @@
+;; Quoting is a thing -- unsugared
+
+(quote x)
+
+(quote (1 2 3))
+
+(quote (x y))
+
+(quote (1 . 2))
+
+(quote ((1 . 2) . x))
+
+(quote (1 2 . 3))
+
+(fst (quote (1 2 3)))
+
+(snd (quote (1 2 3)))
+
+(fst (snd (quote (1 2 3))))
+
+(snd (snd (quote (1 2))))
+
+(quote (quote x))
+
+(quote (1 (quote (2 3))))
+
+(quote (1 . (2 . ())))
+
+(quote (1 2 (splice 3)))
+
+(quote (x (splice 1) 2))
+
+(quote (x (splice (add 2 3)) y))
+
+(quote (x (quote (2 (splice (add 2 3))))))
+
+(quote (x (quote (2 (splice (add 2 3)) (splice (splice (add 2 3)))))))

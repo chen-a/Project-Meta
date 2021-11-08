@@ -1,0 +1,5 @@
+;; functions
+(lambda () 1)
+(lambda (x y) x)                                                          
+(lambda (x y) (x y))                                                      
+(lambda xs xs)                                                            

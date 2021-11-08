@@ -1,0 +1,8 @@
+;; Assumes: lib/arith.meta lib/bool.meta lib/test.meta
+
+(define quarter
+  (lambda (x) (and (not (eq? x 0)) (/ x 4))))
+
+(tests
+ [(quarter 8) 2]
+ [(quarter 0) #f])

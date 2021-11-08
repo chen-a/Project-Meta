@@ -1,0 +1,277 @@
+{
+  "tests": [
+    {
+      "name": "Meta Parse Test: parse-tests/atomic/bools.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/atomic/bools.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/atomic/combinations.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/atomic/combinations.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/atomic/deeper-nesting.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/atomic/deeper-nesting.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/atomic/intrinsics1.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/atomic/intrinsics1.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/atomic/intrinsics2.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/atomic/intrinsics2.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/atomic/ints.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/atomic/ints.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/atomic/nesting.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/atomic/nesting.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/atomic/symbols.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/atomic/symbols.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/programs/curry.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/curry.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/programs/desugared.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/desugared.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+    {
+      "name": "Meta Parse Test: sugared vs desugared",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/sugared.sh parse-tests/programs/desugared.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+    {
+      "name": "Meta Parse Test: parse-tests/programs/fib.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/fib.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/programs/lambdas1.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/lambdas1.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/programs/lambdas2.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/lambdas2.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/programs/lambdas3.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/lambdas3.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/programs/lambdas4.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/lambdas4.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/programs/lambdas5.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/lambdas5.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/programs/lambdas6.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/lambdas6.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/programs/macros.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/macros.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/programs/sugared.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/sugared.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/programs/twice.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/programs/twice.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/quoting/nested-quoting.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/quoting/nested-quoting.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/quoting/nested-splicing.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/quoting/nested-splicing.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/quoting/quoting.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/quoting/quoting.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Parse Test: parse-tests/quoting/splicing.meta",
+      "setup": "",
+      "run": "./test.sh parse-tests/quoting/splicing.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    }
+    
+  ]
+}

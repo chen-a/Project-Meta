@@ -1,0 +1,16 @@
+;; Assumes: lib/define.meta
+
+(defun (id x) x)
+
+(id 1)
+(id 4)
+
+(defun (list . args) args)
+
+(list 1 2 3)
+(list)
+
+(defun (sum1 x . xs) (foldr add x xs))
+
+(sum1 1 2 3)
+(sum1 1)

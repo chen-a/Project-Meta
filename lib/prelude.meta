@@ -1,0 +1,35 @@
+(define null?  (lambda (lst) (eq? lst nil)))
+
+(define list (lambda args args))
+
+(define not
+  (lambda (b)
+    (if b #f #t)))
+
+(define nth
+  (lambda (n lst)
+    (if (eq? n 0)
+        (fst lst)
+        (nth (sub n 1) (snd lst)))))
+
+(define foldr
+  (lambda (f z lst)
+    (if (null? lst)
+        z
+        (f (fst lst) (foldr f z (snd lst))))))
+
+(define foldl
+  (lambda (f z lst)
+    (if (null? lst)
+        z
+        (foldr f (f z (fst lst)) (snd lst)))))
+
+(define map
+  (lambda (f lst)
+    (if (null? lst)
+        '()
+        (cons (f (fst lst)) (map f (snd lst))))))
+
+(define let
+  (macro (binding body)
+    {(lambda ($(fst binding)) $body) $(fst (snd binding))}))

@@ -1,0 +1,13 @@
+;; The following intrinsics are semantically
+;; invalid, but should still parse.
+
+(add #t #f)
+(pair? #t)
+(fst 1)
+(snd 2)
+
+(sub #t 2)
+(mul #f ())
+(div () ())
+(fst 1)
+(snd #f)

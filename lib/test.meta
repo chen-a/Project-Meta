@@ -1,0 +1,9 @@
+;; Assumes: lib/prelude.meta lib/define.meta
+
+(defmacro (tests . tests)
+  (foldr (lambda (thisTest rest)
+           {if (eq? $(fst thisTest) $(fst (snd thisTest)))
+                $rest
+                (cons (list $(cons 'quote (cons (fst thisTest) '())) $(fst (snd thisTest))) $rest)})
+         ''()
+         tests))

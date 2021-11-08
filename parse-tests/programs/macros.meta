@@ -1,0 +1,17 @@
+(macro (x) x)                                       
+
+((macro (x) x) 1)                                   
+
+((macro (x) '$x) 1)                                 
+
+((macro (x) ''$$x) y)                               
+
+((macro (x) ''$x) y)                                
+
+((lambda (x) ((macro (x) x) 2)) 1)                  
+
+((lambda (x) ((macro (x) 'x) 2)) 1)                 
+
+((macro (cond alt cons)
+   '(if (if $cond #f #t) $cons $alt))
+ #t (div 5 1) (div 5 0))                            
