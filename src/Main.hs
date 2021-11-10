@@ -5,6 +5,28 @@ import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 import Bird.Parser
 import Bird.Printer
+data Expr = Boolean Bool 
+    | Integer Integer 
+    | Symbols String
+    | Pairs Expr Expr
+    | Combinations [Expr]
+
+-- Constructor functions
+
+boolean :: Bool -> Expr
+boolean = Boolean
+
+integer :: Integer -> Expr
+integer = Integer
+
+symbols :: String -> Expr
+symbols = Symbols
+
+pairs :: Expr -> Expr -> Expr
+pairs = Pairs 
+
+combinations :: [Expr] -> Expr
+combinations = Combinations
 
 data Expr = Variable String
     | Boolean String String 
