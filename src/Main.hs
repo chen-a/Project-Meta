@@ -3,15 +3,30 @@ module Main where
 import Control.Monad (when)
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
--- import Bird.Parser
--- import Bird.Printer
-import Text.ParserCombinators.Parsec
-import Text.ParserCombinators.Parsec.Expr
+import Bird.Parser
+import Bird.Printer
 data Expr = Boolean Bool 
     | Integer Integer 
     | Symbols String
     | Pairs Expr Expr
     | Combinations [Expr]
+
+-- Constructor functions
+
+boolean :: Bool -> Expr
+boolean = Boolean
+
+integer :: Integer -> Expr
+integer = Integer
+
+symbols :: String -> Expr
+symbols = Symbols
+
+pairs :: Expr -> Expr -> Expr
+pairs = Pairs 
+
+combinations :: [Expr] -> Expr
+combinations = Combinations
 
 main :: IO ()
 main = do args <- getArgs
@@ -24,16 +39,3 @@ main = do args <- getArgs
 goParse, goEval :: String -> IO ()
 goParse s = putStrLn "Your implementation begins here"              
 goEval s  = putStrLn "Your implementation continues here"
-
-numbers :: GenParser Char st Int
-numbers = do
-    spaces
-    x <- many1 digit
-    return (read x :: Int)
-
-word :: GenParser Char st String
-word = do
-    spaces 
-    x <- many1 letter 
-    return x
-
