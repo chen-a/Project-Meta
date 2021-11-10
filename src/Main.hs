@@ -11,23 +11,6 @@ data Expr = Boolean Bool
     | Pairs Expr Expr
     | Combinations [Expr]
 
--- Constructor functions
-
-boolean :: Bool -> Expr
-boolean = Boolean
-
-integer :: Integer -> Expr
-integer = Integer
-
-symbols :: String -> Expr
-symbols = Symbols
-
-pairs :: Expr -> Expr -> Expr
-pairs = Pairs 
-
-combinations :: [Expr] -> Expr
-combinations = Combinations
-
 main :: IO ()
 main = do args <- getArgs
           let files = filter ("-p" /=) args
@@ -39,3 +22,8 @@ main = do args <- getArgs
 goParse, goEval :: String -> IO ()
 goParse s = putStrLn "Your implementation begins here"              
 goEval s  = putStrLn "Your implementation continues here"
+
+
+numbers :: Parser [Int]
+numbers = many digit
+
