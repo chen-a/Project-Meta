@@ -6,6 +6,12 @@ import System.Environment (getArgs)
 import Bird.Parser
 import Bird.Printer
 
+data Expr = Variable String
+    | Boolean String String 
+    | Integer Expr
+    | Symbols Expr
+    | Combinations Expr Expr
+
 main :: IO ()
 main = do args <- getArgs
           let files = filter ("-p" /=) args
