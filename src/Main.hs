@@ -23,7 +23,7 @@ main = do args <- getArgs
               go  . concat =<< mapM readFile files
 
 goParse, goEval :: String -> IO ()
-goParse s = putStrLn (runParser getNextExpr s)
+goParse s = undefined --putStrLn (runParser getNextExpr s)
 
 
 
@@ -37,17 +37,15 @@ operations = satisfy (== '+') <|> satisfy (== '-') <|> satisfy (== '*')
 
 numbers :: Parser Expr
 numbers = do
-    spaces
-    x <- int
+    x <- token int
     return (Constant x)
 
--- >>> runParser numbers "1234 5"
--- [(Constant 1234," 5")]
+-- >>> runParser numbers "-1234 5"
+-- [(Constant (-1234)," 5")]
 
 bool :: Parser Expr
 bool = do
-    spaces 
-    hashtag <- satisfy (== '#')
+    hashtag <- token (satisfy (== '#'))
     value <- satisfy (== 't') <|> satisfy (== 'f')
     if value == 't' then return (Boolean True)
     else return (Boolean False)
@@ -55,30 +53,94 @@ bool = do
 -- >>> runParser bool "#f"
 -- [(Boolean False,"")]
 
-symbols :: Parser Expr
-symbols = do
-    spaces 
-    x <- many1 (letter <|> satisfy isDigit <|> operations)
-    return (Symbol x)
 
--- >>> runParser symbols "              wrd"
--- [(Symbol "wrd","")]
+-- >>> runParser symbols2 "'"
+-- [(Symbol "quote","")]
+
+-- >>> runParser combination "(add '1 3)"
+-- [(Combination [Symbol "add",Symbol "quote",Constant 1,Constant 3],"")]
+
+
+-- original
+ {- symbols1 = do 
+    x <- token (many1 (letter <|> satisfy isDigit <|> operations))
+    return (Symbol x)
+-}
+symbols2 :: Parser Expr
+symbols2 = do 
+    x <- token next
+    if (x == '\'')
+        then return (Symbol "quote")
+    else if (x == '$')
+        then return (Symbol "splice")
+    else do
+        y <- many1 (letter <|> satisfy isDigit <|> operations)
+        return (Symbol (x:y))    
+-- >>> runParser symbols2 "+ d d"
+-- []
+-- >>> runParser symbols2 "$5"
+-- [(Symbol "splice","5")]
+-- >>> runParser combination "(f 4 4 )"
+-- []
+
+symbols3 :: Parser Expr
+symbols3 = do
+    x <- token (many1 (letter <|> satisfy isDigit <|> operations))
+    if (x == "\'")
+        then return (Symbol "quote")
+    else if (x == "$")
+        then return (Symbol "splice")
+    else do
+        return (Symbol x)
+-- >>> runParser symbols3 "+ d d"
+-- [(Symbol "+"," d d")]
+
+-- >>> runParser symbols3 "$ 5"
+-- []
+
+-- >>> runParser combination "(f 4 4 )"
+-- [(Combination [Symbol "f",Constant 4,Constant 4],"")]
+
+symbols4 :: Parser Expr
+symbols4 = do
+    y <- satisfy (== '\'')
+    z <- satisfy (== '$')
+    x <- many (letter <|> satisfy isDigit <|> operations)
+    if y == '\''
+        then return (Symbol "quote")
+    else if z == '$' 
+        then return (Symbol "splice")
+    else 
+        return (Symbol x)
+
+-- >>> runParser symbols4 "+ d d"
+-- []
+-- >>> runParser symbols4 "$ 5"
+-- []
+-- >>> runParser combination "(+ 4 4 )"
+-- []
+
+-- >>> runParser symbols2 "$(1 2 3) "
+-- [(Symbol "splice","(1 2 3) ")]
 
 combination :: Parser Expr
 combination = do 
-    spaces
-    satisfy (== '(') <|> satisfy (== '[')
+    token (satisfy (== '(')) <|> token (satisfy (== '['))
     xs <- sepBy spaces getNextExpr
     satisfy (== ')') <|> satisfy (== ']')
     return (Combination xs)
 
 getNextExpr :: Parser Expr
-getNextExpr = combination <|> bool <|> numbers <|> symbols
--- >>> runParser combination "(add 1 3)"
--- [(Combination [Symbol "add",Constant 1,Constant 3],"")]
+getNextExpr = combination <|> bool <|> numbers <|> symbols3
 
--- >>> runParser combination "(+ 2 3)"
--- [(Combination [Symbol "+",Constant 2,Constant 3],"")]
+-- >>> runParser combination "((lambda args args)  a )    "
+-- []
+
+-- >>> runParser getNextExpr "1;123"
+-- [(Constant 1,";123")]
+
+-- >>> runParser combination "(+ 3)"
+-- []
 
 -- >>> runParser combination "[]"
 -- [(Combination [],"")]
