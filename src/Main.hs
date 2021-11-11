@@ -78,9 +78,9 @@ symbols2 = do
         return (Symbol (x:y))    
 -- >>> runParser symbols2 "+ d d"
 -- []
--- >>> runParser symbols2 "$5"
--- [(Symbol "splice","5")]
--- >>> runParser combination "(f 4 4 )"
+-- >>> runParser symbols2 "$ 2"
+-- [(Symbol "splice"," 2")]
+-- >>> runParser combination "(+ 4 4 )"
 -- []
 
 symbols3 :: Parser Expr
@@ -95,11 +95,11 @@ symbols3 = do
 -- >>> runParser symbols3 "+ d d"
 -- [(Symbol "+"," d d")]
 
--- >>> runParser symbols3 "$ 5"
+-- >>> runParser symbols3 "$ 2*"
 -- []
 
--- >>> runParser combination "(f 4 4 )"
--- [(Combination [Symbol "f",Constant 4,Constant 4],"")]
+-- >>> runParser combination "(+ 4 4 )"
+-- [(Combination [Symbol "+",Constant 4,Constant 4],"")]
 
 symbols4 :: Parser Expr
 symbols4 = do
