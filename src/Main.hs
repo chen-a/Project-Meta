@@ -18,20 +18,36 @@ data Expr = Boolean Bool
 letter :: Parser Char 
 letter = satisfy isAlpha
 
--- not needed?
-whitespace = spaces <|> many1 (satisfy (== '\n'))
+skip = spaces
 
+comments = do 
+    char ';'
+    manyTill anyChar (char '\n') 
+    return ""
+
+-- >>> runParser comments ";; one layer of nesting \n test"
+-- [(""," test")]
+
+-- unused atm
 newLine = do
     x <- satisfy (== '\\')
     y <- satisfy (== 'n')
     return ([x] ++ [y])
 
-operations :: Parser Char
-operations = satisfy (== '+') <|> satisfy (== '-') <|> satisfy (== '*')
+anyChar = satisfy (const True)
+
+manyTill p end = scan
+                where
+                    scan  = do{ _ <- end; return [] }
+                            <|>
+                            do{ x <- p; xs <- scan; return (x:xs) }
+
+extraSymbols :: Parser Char
+extraSymbols = satisfy (== '+') <|> satisfy (== '-') <|> satisfy (== '*') <|> satisfy (== '?')  <|> satisfy (=='?')
 
 numbers :: Parser Expr
 numbers = do
-    whitespace
+    skip
     x <- int
     return (Constant x)
 
@@ -40,7 +56,7 @@ numbers = do
 
 bool :: Parser Expr
 bool = do
-    whitespace
+    skip
     hashtag <- satisfy (== '#')
     value <- satisfy (== 't') <|> satisfy (== 'f')
     if value == 't' then return (Boolean True)
@@ -50,50 +66,41 @@ bool = do
 -- [(Boolean False,"")]
 
 
--- >>> runParser symbols2 "'"
--- [(Symbol "quote","")]
-
--- >>> runParser combination "(add '1 3)"
--- [(Combination [Symbol "add",Symbol "quote",Constant 1,Constant 3],"")]
+-- >>> runParser combination "( $add '1 3)"
+-- []
 
 
 -- original
 symbols = do 
-    whitespace
-    x <- many1 (letter <|> satisfy isDigit <|> operations)
+    skip
+    x <- many1 (letter <|> satisfy isDigit <|> extraSymbols)
     return (Symbol x)
-
-symbols2 :: Parser Expr
-symbols2 = do 
-    x <- token next
-    if (x == '\'')
-        then return (Symbol "quote")
-    else if (x == '$')
-        then return (Symbol "splice")
-    else do
-        y <- many1 (letter <|> satisfy isDigit <|> operations)
-        return (Symbol (x:y))    
-
-symbols3 :: Parser Expr
-symbols3 = do
-    x <- token (many1 (letter <|> satisfy isDigit <|> operations))
-    if (x == "\'")
-        then return (Symbol "quote")
-    else if (x == "$")
-        then return (Symbol "splice")
-    else do
-        return (Symbol x)
 
 combination :: Parser Expr
 combination = do 
-    whitespace
-    satisfy (== '(') <|> (satisfy (== '['))
-    xs <- sepBy whitespace getNextExpr
-    satisfy (== ')') <|> satisfy (== ']')
+    skip
+    symbol "(" <|> symbol "["
+    xs <- sepBy skip getNextExpr
+    symbol ")" <|> symbol "]"
     return (Combination xs)
 
 getNextExpr :: Parser Expr
-getNextExpr = combination <|> bool <|> numbers <|> symbols
+getNextExpr = combination <|> bool <|> numbers <|> symbols <|> quote <|> splice
+
+quote :: Parser Expr 
+quote = do 
+    char '\''
+    x <- getNextExpr
+    return (Combination [Symbol "quote", x])
+
+splice :: Parser Expr
+splice = do
+    char '$'
+    x <- getNextExpr
+    return (Combination [Symbol "splice", x])
+-- >>> runParser quote "'(1 2 3)"
+-- [(Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]],"")]
+
 
 -- >>> runParser combination "((lambda args args)  a )    "
 -- [(Combination [Combination [Symbol "lambda",Symbol "args",Symbol "args"],Symbol "a"],"    ")]
@@ -136,13 +143,17 @@ goParse s = do
         Left metaAST -> mapM_ putStrLn (map printAst metaAST)
         Right err -> putStrLn ("error: " ++ err)
 
-metaAST = sepBy whitespace getNextExpr
+metaAST :: Parser [Expr]
+metaAST = do
+    skip
+    comments
+    sepBy skip getNextExpr
 
 program :: Parser [Expr]
 program = do
-    whitespace 
+    skip 
     ss <- metaAST
-    whitespace 
+    skip
     return ss
 
 parseMeta s = 
