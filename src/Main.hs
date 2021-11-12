@@ -28,6 +28,8 @@ comments = do
 -- >>> runParser comments ";; one layer of nesting \n test"
 -- [(""," test")]
 
+-- >>> runParser comments "test"
+
 -- unused atm
 newLine = do
     x <- satisfy (== '\\')
@@ -43,7 +45,7 @@ manyTill p end = scan
                             do{ x <- p; xs <- scan; return (x:xs) }
 
 extraSymbols :: Parser Char
-extraSymbols = satisfy (== '+') <|> satisfy (== '-') <|> satisfy (== '*') <|> satisfy (== '?')  <|> satisfy (=='?')
+extraSymbols = satisfy (== '+') <|> satisfy (== '-') <|> satisfy (== '*') <|> satisfy (== '?')  <|> satisfy (=='?') <|> satisfy (== '.')
 
 numbers :: Parser Expr
 numbers = do
@@ -163,14 +165,3 @@ parseMeta s =
 
 
 goEval s  = putStrLn "Your implementation continues here"
-
--- >>> runParser combination "(define fib (lambda (n) (if (eq? n 0) 0 (if (eq? n 1) 1 (add (fib (sub n 1)) (fib (sub n 2)))))))"
--- [(Combination [Symbol "define",Symbol "fib",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Constant 0,Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 1],Constant 1,Combination [Symbol "add",Combination [Symbol "fib",Combination [Symbol "sub",Symbol "n",Constant 1]],Combination [Symbol "fib",Combination [Symbol "sub",Symbol "n",Constant 2]]]]]]],"")])
-
--- >>> printAst (Combination [Symbol "test", Constant 1])
--- "(test 1)"
-
--- >>> printAst (Combination [Symbol "define",Symbol "fib",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Constant 0,Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 1],Constant 1,Combination [Symbol "add",Combination [Symbol "fib",Combination [Symbol "sub",Symbol "n",Constant 1]],Combination [Symbol "fib",Combination [Symbol "sub",Symbol "n",Constant 2]]]]]]])
--- "(define fib (lambda (n ) (if (eq? n 0) 0 (if (eq? n 1) 1 (add (fib (sub n 1)) (fib (sub n 2)))))))"
-
--- >>> printAst (Combination [Symbol "define", Symbol "fib"])
