@@ -153,9 +153,9 @@ metaAST = sepBy skip getNextExpr
 program :: Parser [Expr]
 program = do
     skip 
-    comments
+    optional comments
     ss <- metaAST
-    comments
+    optional comments
     skip
     return ss
 
