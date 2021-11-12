@@ -23,8 +23,28 @@ main = do args <- getArgs
               go  . concat =<< mapM readFile files
 
 goParse, goEval :: String -> IO ()
-goParse s = undefined --putStrLn (runParser getNextExpr s)
+goParse s = do
+     let result = parseMeta s
+     case result of
+        Left stmts -> mapM_ putStrLn (map printAst stmts)
+        Right err -> putStrLn ("error: " ++ err)
 
+stmts = sepBy spaces getNextExpr
+
+program :: Parser [Expr]
+program = do
+    spaces 
+    ss <- stmts
+    spaces 
+    return ss
+
+parseMeta s = 
+    case result of
+        [] -> Right "invalid syntax"
+        ((stmts, "") : _) -> Left stmts
+        ((_, remaining) : _) -> Right ("invalid syntax at '" ++ (take 20 remaining) ++ "...'")
+        where
+            result = runParser program s
 
 
 goEval s  = putStrLn "Your implementation continues here"
@@ -76,12 +96,12 @@ symbols2 = do
     else do
         y <- many1 (letter <|> satisfy isDigit <|> operations)
         return (Symbol (x:y))    
--- >>> runParser symbols2 "+ d d"
+-- >>> runParser symbols2 "1"
 -- []
 -- >>> runParser symbols2 "$ 2"
 -- [(Symbol "splice"," 2")]
 -- >>> runParser combination "(+ 4 4 )"
--- []
+-- [(Combination [Symbol "+",Constant 4,Constant 4],"")]
 
 symbols3 :: Parser Expr
 symbols3 = do
@@ -92,14 +112,14 @@ symbols3 = do
         then return (Symbol "splice")
     else do
         return (Symbol x)
--- >>> runParser symbols3 "+ d d"
+-- >>> runParser symbols3 " + d d"
 -- [(Symbol "+"," d d")]
 
--- >>> runParser symbols3 "$ 2*"
+-- >>> runParser symbols3 "'f"
 -- []
 
 -- >>> runParser combination "(+ 4 4 )"
--- [(Combination [Symbol "+",Constant 4,Constant 4],"")]
+-- []
 
 symbols4 :: Parser Expr
 symbols4 = do
