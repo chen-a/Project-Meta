@@ -144,10 +144,7 @@ goParse s = do
         Right err -> putStrLn ("error: " ++ err)
 
 metaAST :: Parser [Expr]
-metaAST = do
-    skip
-    comments
-    sepBy skip getNextExpr
+metaAST = sepBy skip getNextExpr
 
 program :: Parser [Expr]
 program = do
