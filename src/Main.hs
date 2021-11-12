@@ -124,7 +124,7 @@ printAst (Boolean b)
     | otherwise = "#f"
 printAst (Constant n) = show n
 printAst (Symbol s) = s
-printAst (Combination (x:xs)) = "(" ++ intercalate " " (map printAst xs) ++ ")"
+printAst (Combination (x:xs)) = "(" ++ printAst x ++ " " ++ intercalate " " (map printAst xs) ++ ")"
 printAst (Combination []) = ""
 
 main :: IO ()
@@ -163,3 +163,14 @@ parseMeta s =
 
 
 goEval s  = putStrLn "Your implementation continues here"
+
+-- >>> runParser combination "(define fib (lambda (n) (if (eq? n 0) 0 (if (eq? n 1) 1 (add (fib (sub n 1)) (fib (sub n 2)))))))"
+-- [(Combination [Symbol "define",Symbol "fib",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Constant 0,Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 1],Constant 1,Combination [Symbol "add",Combination [Symbol "fib",Combination [Symbol "sub",Symbol "n",Constant 1]],Combination [Symbol "fib",Combination [Symbol "sub",Symbol "n",Constant 2]]]]]]],"")])
+
+-- >>> printAst (Combination [Symbol "test", Constant 1])
+-- "(test 1)"
+
+-- >>> printAst (Combination [Symbol "define",Symbol "fib",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Constant 0,Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 1],Constant 1,Combination [Symbol "add",Combination [Symbol "fib",Combination [Symbol "sub",Symbol "n",Constant 1]],Combination [Symbol "fib",Combination [Symbol "sub",Symbol "n",Constant 2]]]]]]])
+-- "(define fib (lambda (n ) (if (eq? n 0) 0 (if (eq? n 1) 1 (add (fib (sub n 1)) (fib (sub n 2)))))))"
+
+-- >>> printAst (Combination [Symbol "define", Symbol "fib"])
