@@ -14,50 +14,25 @@ data Expr = Boolean Bool
     | Combination [Expr]
     deriving Show
 
-main :: IO ()
-main = do args <- getArgs
-          let files = filter ("-p" /=) args
-              go | elem "-p" args = goParse
-                 | otherwise      = goEval
-          when (not (null files)) $
-              go  . concat =<< mapM readFile files
-
-goParse, goEval :: String -> IO ()
-goParse s = do
-     let result = parseMeta s
-     case result of
-        Left stmts -> mapM_ putStrLn (map printAst stmts)
-        Right err -> putStrLn ("error: " ++ err)
-
-stmts = sepBy spaces getNextExpr
-
-program :: Parser [Expr]
-program = do
-    spaces 
-    ss <- stmts
-    spaces 
-    return ss
-
-parseMeta s = 
-    case result of
-        [] -> Right "invalid syntax"
-        ((stmts, "") : _) -> Left stmts
-        ((_, remaining) : _) -> Right ("invalid syntax at '" ++ (take 20 remaining) ++ "...'")
-        where
-            result = runParser program s
-
-
-goEval s  = putStrLn "Your implementation continues here"
 
 letter :: Parser Char 
 letter = satisfy isAlpha
+
+-- not needed?
+whitespace = spaces <|> many1 (satisfy (== '\n'))
+
+newLine = do
+    x <- satisfy (== '\\')
+    y <- satisfy (== 'n')
+    return ([x] ++ [y])
 
 operations :: Parser Char
 operations = satisfy (== '+') <|> satisfy (== '-') <|> satisfy (== '*')
 
 numbers :: Parser Expr
 numbers = do
-    x <- token int
+    whitespace
+    x <- int
     return (Constant x)
 
 -- >>> runParser numbers "-1234 5"
@@ -65,7 +40,8 @@ numbers = do
 
 bool :: Parser Expr
 bool = do
-    hashtag <- token (satisfy (== '#'))
+    whitespace
+    hashtag <- satisfy (== '#')
     value <- satisfy (== 't') <|> satisfy (== 'f')
     if value == 't' then return (Boolean True)
     else return (Boolean False)
@@ -82,10 +58,11 @@ bool = do
 
 
 -- original
- {- symbols1 = do 
-    x <- token (many1 (letter <|> satisfy isDigit <|> operations))
+symbols = do 
+    whitespace
+    x <- many1 (letter <|> satisfy isDigit <|> operations)
     return (Symbol x)
--}
+
 symbols2 :: Parser Expr
 symbols2 = do 
     x <- token next
@@ -96,12 +73,6 @@ symbols2 = do
     else do
         y <- many1 (letter <|> satisfy isDigit <|> operations)
         return (Symbol (x:y))    
--- >>> runParser symbols2 "1"
--- []
--- >>> runParser symbols2 "$ 2"
--- [(Symbol "splice"," 2")]
--- >>> runParser combination "(+ 4 4 )"
--- [(Combination [Symbol "+",Constant 4,Constant 4],"")]
 
 symbols3 :: Parser Expr
 symbols3 = do
@@ -112,55 +83,29 @@ symbols3 = do
         then return (Symbol "splice")
     else do
         return (Symbol x)
--- >>> runParser symbols3 " + d d"
--- [(Symbol "+"," d d")]
-
--- >>> runParser symbols3 "'f"
--- []
-
--- >>> runParser combination "(+ 4 4 )"
--- []
-
-symbols4 :: Parser Expr
-symbols4 = do
-    y <- satisfy (== '\'')
-    z <- satisfy (== '$')
-    x <- many (letter <|> satisfy isDigit <|> operations)
-    if y == '\''
-        then return (Symbol "quote")
-    else if z == '$' 
-        then return (Symbol "splice")
-    else 
-        return (Symbol x)
-
--- >>> runParser symbols4 "+ d d"
--- []
--- >>> runParser symbols4 "$ 5"
--- []
--- >>> runParser combination "(+ 4 4 )"
--- []
-
--- >>> runParser symbols2 "$(1 2 3) "
--- [(Symbol "splice","(1 2 3) ")]
 
 combination :: Parser Expr
 combination = do 
-    token (satisfy (== '(')) <|> token (satisfy (== '['))
-    xs <- sepBy spaces getNextExpr
+    whitespace
+    satisfy (== '(') <|> (satisfy (== '['))
+    xs <- sepBy whitespace getNextExpr
     satisfy (== ')') <|> satisfy (== ']')
     return (Combination xs)
 
 getNextExpr :: Parser Expr
-getNextExpr = combination <|> bool <|> numbers <|> symbols3
+getNextExpr = combination <|> bool <|> numbers <|> symbols
 
 -- >>> runParser combination "((lambda args args)  a )    "
--- []
+-- [(Combination [Combination [Symbol "lambda",Symbol "args",Symbol "args"],Symbol "a"],"    ")]
+
+-- >>> runParser combination "(add 1 2)"
+-- [(Combination [Symbol "add",Constant 1,Constant 2],"")]
 
 -- >>> runParser getNextExpr "1;123"
 -- [(Constant 1,";123")]
 
 -- >>> runParser combination "(+ 3)"
--- []
+-- [(Combination [Symbol "+",Constant 3],"")]
 
 -- >>> runParser combination "[]"
 -- [(Combination [],"")]
@@ -174,3 +119,39 @@ printAst (Constant n) = show n
 printAst (Symbol s) = s
 printAst (Combination (x:xs)) = "(" ++ intercalate " " (map printAst xs) ++ ")"
 printAst (Combination []) = ""
+
+main :: IO ()
+main = do args <- getArgs
+          let files = filter ("-p" /=) args
+              go | elem "-p" args = goParse
+                 | otherwise      = goEval
+          when (not (null files)) $
+              go  . concat =<< mapM readFile files
+
+goParse, goEval :: String -> IO ()
+goParse s = do
+     -- let ns = intercalate " " (lines s)
+     let result = parseMeta s
+     case result of
+        Left metaAST -> mapM_ putStrLn (map printAst metaAST)
+        Right err -> putStrLn ("error: " ++ err)
+
+metaAST = sepBy whitespace getNextExpr
+
+program :: Parser [Expr]
+program = do
+    whitespace 
+    ss <- metaAST
+    whitespace 
+    return ss
+
+parseMeta s = 
+    case result of
+        [] -> Right "invalid syntax"
+        ((metaAST, "") : _) -> Left metaAST
+        ((_, remaining) : _) -> Right ("invalid syntax at " ++ (take 20 remaining) ++ ".......")
+        where
+            result = runParser program s
+
+
+goEval s  = putStrLn "Your implementation continues here"
