@@ -20,6 +20,8 @@ letter = satisfy isAlpha
 
 skip = spaces
 
+optional p = do{ _ <- p; return ()} <|> return ()
+
 comments = do 
     char ';'
     manyTill anyChar (char '\n') 
@@ -127,7 +129,7 @@ printAst (Boolean b)
 printAst (Constant n) = show n
 printAst (Symbol s) = s
 printAst (Combination (x:xs)) = "(" ++ printAst x ++ " " ++ intercalate " " (map printAst xs) ++ ")"
-printAst (Combination []) = ""
+printAst (Combination []) = "()"
 
 main :: IO ()
 main = do args <- getArgs
@@ -151,7 +153,9 @@ metaAST = sepBy skip getNextExpr
 program :: Parser [Expr]
 program = do
     skip 
+    optional comments
     ss <- metaAST
+    optional comments
     skip
     return ss
 
