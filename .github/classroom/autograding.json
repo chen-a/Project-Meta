@@ -112,7 +112,7 @@
     {
       "name": "Meta Parse Test: sugared vs desugared",
       "setup": "",
-      "run": "./test.sh parse-tests/programs/sugared.sh parse-tests/programs/desugared.meta",
+      "run": "./test.sh parse-tests/programs/sugared.meta parse-tests/programs/desugared.meta",
       "input": "",
       "output": "",
       "comparison": "included",
