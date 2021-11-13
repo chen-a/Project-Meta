@@ -73,13 +73,9 @@ bool = do
 -- >>> runParser bool "#f"
 -- [(Boolean False,"")]
 
-
 -- >>> runParser combination "(x y . z)"
 -- [(Combination [Symbol "x",Symbol "y",Symbol ".",Symbol "z"],"")]
 
-
-
--- original
 symbols = do 
     optional comments
     skip
@@ -114,7 +110,6 @@ splice = do
 -- >>> runParser quote "'(1 2 3)"
 -- [(Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]],"")]
 
- 
 -- >>> runParser combination "((lambda args args)  a )    "
 -- [(Combination [Combination [Symbol "lambda",Symbol "args",Symbol "args"],Symbol "a"],"    ")]
 
@@ -126,9 +121,6 @@ splice = do
 
 -- >>> runParser combination "(+ 3)"
 -- [(Combination [Symbol "+",Constant 3],"")]
-
--- >>> runParser combination "[]"
--- [(Combination [],"")]
 
 -- Prints the AST
 printAst :: Expr -> String
@@ -157,7 +149,9 @@ goParse s = do
         Right err -> putStrLn ("error: " ++ err)
 
 metaAST :: Parser [Expr]
-metaAST = sepBy skip getNextExpr
+metaAST = do 
+    skip
+    sepBy skip getNextExpr
 
 program :: Parser [Expr]
 program = do
@@ -179,5 +173,15 @@ parseMeta s =
 
 goEval s  = putStrLn "Your implementation continues here"
 
--- >>> runParser program "(+ 2 3) (1 2 3) [else #f] [1 2 3] ;; dots (1 . 2) (x y . z)"
--- [([Combination [Symbol "+",Constant 2,Constant 3],Combination [Constant 1,Constant 2,Constant 3],Combination [Symbol "else",Boolean False],Combination [Constant 1,Constant 2,Constant 3]],";; dots (1 . 2) (x y . z)")]
+-- >>> runParser program ";; Quoting is a thing \n 'x                              ; ==> 'x    \n test"
+-- [([],"'x                              ; ==> 'x    \n test")]
+
+
+-- >>> runParser skip ";; Quoting is a thing \n 'x                              ; ==> 'x    \n test"
+-- [("",";; Quoting is a thing \n 'x                              ; ==> 'x    \n test")]
+
+-- >>> runParser (optional comments) ";; Quoting is a thing \n 'x                              ; ==> 'x    \n test"
+-- [(()," 'x                              ; ==> 'x    \n test")]
+
+-- >>> runParser metaAST " 'x                              ; ==> 'x    \n test"
+-- [([Combination [Symbol "quote",Symbol "x"],Symbol "test"],"")]
