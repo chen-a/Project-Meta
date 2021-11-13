@@ -18,10 +18,12 @@ data Expr = Boolean Bool
 letter :: Parser Char 
 letter = satisfy isAlpha
 
+skip :: Parser String
 skip = spaces
 
-optional p = do{ _ <- p; return ()} <|> return ()
+optional p = do{ _ <- p; return ""} <|> return ""
 
+comments :: Parser String
 comments = do 
     char ';'
     manyTill anyChar (char '\n') 
@@ -151,7 +153,8 @@ goParse s = do
 metaAST :: Parser [Expr]
 metaAST = do 
     skip
-    sepBy skip getNextExpr
+    -- sepBy skip getNextExpr
+    sepBy (comments <|> skip) getNextExpr
 
 program :: Parser [Expr]
 program = do
@@ -162,6 +165,7 @@ program = do
     skip
     return ss
 
+parseMeta :: [Char] -> Either [Expr] [Char]
 parseMeta s = 
     case result of
         [] -> Right "invalid syntax"
@@ -173,15 +177,15 @@ parseMeta s =
 
 goEval s  = putStrLn "Your implementation continues here"
 
--- >>> runParser program ";; Quoting is a thing \n 'x                              ; ==> 'x    \n test"
--- [([],"'x                              ; ==> 'x    \n test")]
+-- >>> runParser program "'x                              ; ==> 'x    \n '(1 2 3)                              ; ==> (1 2 3)"
+-- [([Combination [Symbol "quote",Symbol "x"]],"; ==> 'x    \n '(1 2 3)                              ; ==> (1 2 3)")]
 
 
--- >>> runParser skip ";; Quoting is a thing \n 'x                              ; ==> 'x    \n test"
--- [("",";; Quoting is a thing \n 'x                              ; ==> 'x    \n test")]
+-- >>> runParser skip ";; Quoting is a thing \n\n 'x                              ; ==> 'x    \n '(1 2 3)"
+-- [("",";; Quoting is a thing \n\n 'x                              ; ==> 'x    \n '(1 2 3)")]
 
--- >>> runParser (optional comments) ";; Quoting is a thing \n 'x                              ; ==> 'x    \n test"
--- [(()," 'x                              ; ==> 'x    \n test")]
+-- >>> runParser (optional comments) ";; Quoting is a thing \n 'x                              ; ==> 'x    \n '(1 2 3)"
+-- [(""," 'x                              ; ==> 'x    \n '(1 2 3)")]
 
--- >>> runParser metaAST " 'x                              ; ==> 'x    \n test"
--- [([Combination [Symbol "quote",Symbol "x"],Symbol "test"],"")]
+-- >>> runParser metaAST " 'x                              ; ==> 'x    \n '(1 2 3)"
+
