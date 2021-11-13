@@ -51,7 +51,9 @@ extraSymbols = satisfy (== '+') <|> satisfy (== '-') <|> satisfy (== '*') <|> sa
 
 numbers :: Parser Expr
 numbers = do
+    optional comments
     skip
+    optional comments
     x <- int
     return (Constant x)
 
@@ -60,7 +62,9 @@ numbers = do
 
 bool :: Parser Expr
 bool = do
+    optional comments
     skip
+    optional comments
     hashtag <- satisfy (== '#')
     value <- satisfy (== 't') <|> satisfy (== 'f')
     if value == 't' then return (Boolean True)
@@ -70,19 +74,24 @@ bool = do
 -- [(Boolean False,"")]
 
 
--- >>> runParser combination "( $add '1 3)"
--- []
+-- >>> runParser combination "(x y . z)"
+-- [(Combination [Symbol "x",Symbol "y",Symbol ".",Symbol "z"],"")]
+
 
 
 -- original
 symbols = do 
+    optional comments
     skip
+    optional comments
     x <- many1 (letter <|> satisfy isDigit <|> extraSymbols)
     return (Symbol x)
 
 combination :: Parser Expr
 combination = do 
+    optional comments
     skip
+    optional comments
     symbol "(" <|> symbol "["
     xs <- sepBy skip getNextExpr
     symbol ")" <|> symbol "]"
@@ -105,7 +114,7 @@ splice = do
 -- >>> runParser quote "'(1 2 3)"
 -- [(Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]],"")]
 
-
+ 
 -- >>> runParser combination "((lambda args args)  a )    "
 -- [(Combination [Combination [Symbol "lambda",Symbol "args",Symbol "args"],Symbol "a"],"    ")]
 
@@ -169,3 +178,6 @@ parseMeta s =
 
 
 goEval s  = putStrLn "Your implementation continues here"
+
+-- >>> runParser program "(+ 2 3) (1 2 3) [else #f] [1 2 3] ;; dots (1 . 2) (x y . z)"
+-- [([Combination [Symbol "+",Constant 2,Constant 3],Combination [Constant 1,Constant 2,Constant 3],Combination [Symbol "else",Boolean False],Combination [Constant 1,Constant 2,Constant 3]],";; dots (1 . 2) (x y . z)")]
