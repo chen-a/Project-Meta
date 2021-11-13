@@ -21,24 +21,35 @@ letter = satisfy isAlpha
 skip :: Parser String
 skip = spaces
 
+-- >>> runParser skip ""
+-- [("","")]
 optional p = do{ _ <- p; return ""} <|> return ""
 
-comments :: Parser String
+comments :: Parser Char                                                       
 comments = do 
     char ';'
     manyTill anyChar (char '\n') 
-    return ""
+    return ';'
+
+garbage :: Parser String
+garbage = many (satisfy isSpace <|> comments)
+
+-- >>> isSpace 
+-- lexical error in string/character literal at end of input
+
+stripComments :: Parser String 
+stripComments = do 
+    optional comments
+    xs <- sepBy comments (manyTill anyChar (char ';'))
+    optional comments
+    return (concat xs)
+
+--- >>> runParser stripComments ";; Quoting is a thing \n'x       ;; ==> 'x \n '(1 2 3)  ;; ==> (1 2 3) \n '(x y)             ;; ==> ('x 'y)"
+-- [("'x        '(1 2 3)   '(x y)             ","; ==> ('x 'y)")]
+
 
 -- >>> runParser comments ";; one layer of nesting \n test"
 -- [(""," test")]
-
--- >>> runParser comments "test"
-
--- unused atm
-newLine = do
-    x <- satisfy (== '\\')
-    y <- satisfy (== 'n')
-    return ([x] ++ [y])
 
 anyChar = satisfy (const True)
 
@@ -74,9 +85,6 @@ bool = do
 
 -- >>> runParser bool "#f"
 -- [(Boolean False,"")]
-
--- >>> runParser combination "(x y . z)"
--- [(Combination [Symbol "x",Symbol "y",Symbol ".",Symbol "z"],"")]
 
 symbols = do 
     optional comments
@@ -151,10 +159,10 @@ goParse s = do
         Right err -> putStrLn ("error: " ++ err)
 
 metaAST :: Parser [Expr]
-metaAST = do 
+metaAST = do
     skip
-    -- sepBy skip getNextExpr
-    sepBy (comments <|> skip) getNextExpr
+    --sepBy (comments <|> skip) getNextExpr
+    sepBy ( garbage ) getNextExpr
 
 program :: Parser [Expr]
 program = do
@@ -164,6 +172,7 @@ program = do
     optional comments
     skip
     return ss
+
 
 parseMeta :: [Char] -> Either [Expr] [Char]
 parseMeta s = 
@@ -177,15 +186,21 @@ parseMeta s =
 
 goEval s  = putStrLn "Your implementation continues here"
 
--- >>> runParser program "'x                              ; ==> 'x    \n '(1 2 3)                              ; ==> (1 2 3)"
--- [([Combination [Symbol "quote",Symbol "x"]],"; ==> 'x    \n '(1 2 3)                              ; ==> (1 2 3)")]
+-- >>> runParser program ";; Quoting is a thing \n 'x       ; ==> 'x \n '(1 2 3)  ; ==> (1 2 3) \n '(x y)             ; ==> ('x 'y)"
+-- [([Combination [Symbol "quote",Symbol "x"],Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]],Combination [Symbol "quote",Combination [Symbol "x",Symbol "y"]]],"; ==> ('x 'y)")]
 
+-- >>> runParser program "'(1 2 3)  ; ==> (1 2 3) \n '(x y)             ; ==> ('x 'y)"
+-- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]],Combination [Symbol "quote",Combination [Symbol "x",Symbol "y"]]],"; ==> ('x 'y)")]
 
--- >>> runParser skip ";; Quoting is a thing \n\n 'x                              ; ==> 'x    \n '(1 2 3)"
--- [("",";; Quoting is a thing \n\n 'x                              ; ==> 'x    \n '(1 2 3)")]
+-- >>> runParser program "'(x y)             ; ==> ('x 'y)"
+-- [([Combination [Symbol "quote",Combination [Symbol "x",Symbol "y"]]],"; ==> ('x 'y)")]
 
 -- >>> runParser (optional comments) ";; Quoting is a thing \n 'x                              ; ==> 'x    \n '(1 2 3)"
 -- [(""," 'x                              ; ==> 'x    \n '(1 2 3)")]
 
--- >>> runParser metaAST " 'x                              ; ==> 'x    \n '(1 2 3)"
+-- >>> runParser program "'(1 . (2 . ()))       ; ==> (1 2) \n ;; Splicing is also a thing... I'm assuming here that you have (most of) the intrinsics implemented: \n '(1 2 $3)    ; ==> (1 2 3)"
+-- [([Combination [Symbol "quote",Combination [Constant 1,Symbol ".",Combination [Constant 2,Symbol ".",Combination []]]]],"'(1 2 $3)    ; ==> (1 2 3)")]
 
+
+-- >>> runParser metaAST " 'x                              ; ==> 'x    \n '(1 2 3)"
+-- [([Combination [Symbol "quote",Symbol "x"],Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]],"")]
