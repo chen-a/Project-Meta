@@ -1,0 +1,2 @@
+;; macro application
+((macro (x) x) 1)

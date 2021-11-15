@@ -1,0 +1,10 @@
+;; Recursion and definition
+
+(define twice
+  (lambda (x)
+    (if (eq? x 0)
+        0
+        (add 2 (twice (sub x 1))))))
+
+(twice 0)
+(twice 8)

@@ -1,0 +1,12 @@
+;; one layer of nesting
+(add 1 (add 2 3))
+
+;; Line breaks don't matter
+
+(add 1
+     (add 2 3))  
+
+(sub 1
+     (add 3 4))  
+
+(eq? (add 1 2) 3)

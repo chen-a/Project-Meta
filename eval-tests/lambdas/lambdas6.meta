@@ -1,0 +1,6 @@
+;; dotted tails in arg lists
+
+((lambda (f g . args) (f (g (fst (snd args)))))
+ (lambda (x) (add x 1))
+ (lambda (x) (sub x 1))
+ 2 3)                                                                     

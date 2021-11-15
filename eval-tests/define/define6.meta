@@ -1,0 +1,12 @@
+;; Very simple recursion
+(define zero
+  (lambda (n)
+    (if (eq? n 0) n (zero (sub n 1)))
+  )
+)
+
+(zero 0)
+(zero 1)
+(zero 2)
+(zero 3)
+  

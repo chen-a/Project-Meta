@@ -1,0 +1,20 @@
+
+;; nested applications
+
+(((lambda (x) (lambda (y) x)) 1) 2)                                       
+
+(((lambda (x) (lambda (y) y)) 1) 2)                                       
+
+(((lambda (x) (lambda (y) (add x y))) 1) 2)                               
+
+((((lambda (x) (lambda (y) (lambda (z) z))) 1) 2) 3)                      
+
+((((lambda (x) (lambda (y) (lambda (z) (add (add x y) z)))) 1) 2) 3)      
+
+(((lambda (x y) (lambda (z) (add x z))) 1 2) 3)                           
+
+(((lambda (x y) (lambda (z) (add y z))) 1 2) 3)                           
+
+(((lambda (x) (lambda (y z) (add x z))) 1) 2 3)                           
+
+(((lambda (x) (lambda (y z) (add x y))) 1) 2 3)                           

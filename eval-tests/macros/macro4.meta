@@ -1,0 +1,9 @@
+;; HO and all that
+
+((lambda (x) ((macro (x) x) 2)) 1)                  
+
+((lambda (x) ((macro (x) 'x) 2)) 1)                 
+
+((macro (cond alt cons)
+   '(if (if $cond #f #t) $cons $alt))
+ #t (div 5 1) (div 5 0))                            

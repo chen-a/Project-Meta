@@ -1,0 +1,6 @@
+;; defining functions via intrinsics
+(define first fst)
+(define second snd)
+
+(first '(1 2))
+(second '(1 2))

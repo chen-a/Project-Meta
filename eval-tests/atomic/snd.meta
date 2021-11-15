@@ -1,0 +1,2 @@
+(snd (cons 1 2))
+(snd (cons #t #f))

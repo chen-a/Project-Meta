@@ -1,0 +1,5 @@
+;; var definitions
+(define x 1)
+(define y 1)
+
+(add x y)

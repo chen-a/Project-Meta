@@ -1,0 +1,4 @@
+(eq? #t #t)
+(eq? #f #f)
+(eq? #f #t)
+(eq? #t #f)

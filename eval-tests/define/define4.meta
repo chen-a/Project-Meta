@@ -1,0 +1,15 @@
+;; actually defining functions
+
+(define third
+  (lambda (p)
+    (fst (snd (snd p)))
+  )
+)
+
+(define xs
+  (cons 1 (cons 2 (cons 3 nil))))
+  
+(third xs)
+(third '(3 4 5))
+(third (cons 10 (cons 11 (cons 12 (cons 13 (cons 14 nil))))))
+

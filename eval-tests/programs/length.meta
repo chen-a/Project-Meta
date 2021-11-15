@@ -1,0 +1,18 @@
+(define null?
+  (lambda (lst)
+    (if (eq? lst nil) #t #f)
+  )
+)
+
+(null? (cons 1 nil))
+(null? nil)
+
+
+(define length
+  (lambda (lst)
+     (if (null? lst)
+         0
+         (add 1 (length (snd lst))))))
+
+(length (cons 1 (cons 2 (cons 3 nil))))
+(length '(1 2 3 4 5))

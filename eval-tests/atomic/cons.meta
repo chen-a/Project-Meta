@@ -1,0 +1,4 @@
+(cons 1 2)
+(cons 2 1)
+(cons #t #f)
+(cons #f #t)

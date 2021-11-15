@@ -1,0 +1,15 @@
+;; arg lists
+
+((lambda args args) 1)                                                    
+
+((lambda args args) 1 2)                                                  
+
+((lambda args args) 1 2 3)                                                
+
+((lambda args args))                                                      
+
+((lambda args (add (fst args) (fst (snd args)))) 1 2)                     
+
+((lambda args (add (fst args)
+                   (add (fst (snd args)) (fst (snd (snd args))))))
+ 1 2 3)                                                                   

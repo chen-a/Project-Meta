@@ -1,0 +1,8 @@
+;; Deeper nesting
+(add (add 1 2) (add (add 1 2) (add 2 3)))
+
+;; lists
+(cons 1 (cons 2 (cons 3 (cons 4 nil))))
+
+;; here we go
+(cons (add 1 (add 3 (add 4 5))) (cons 1 (cons 3 (cons (add 2 (add 3 4)) nil))))

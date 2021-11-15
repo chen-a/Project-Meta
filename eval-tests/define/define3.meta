@@ -1,0 +1,15 @@
+;; lists and stuff
+
+(define xs
+  (cons 1 (cons 2 (cons 3 nil))))
+  
+(define ys
+  (cons 1 (cons 2 (cons 3 nil))))
+
+(list? xs)
+(list? ys)
+
+(fst xs)
+(fst ys)
+(snd xs)
+(snd ys)

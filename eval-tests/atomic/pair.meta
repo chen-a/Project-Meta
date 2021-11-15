@@ -1,0 +1,5 @@
+(pair? (cons 1 2))
+(pair? '(1 2))
+[pair? '[#t #f]]
+(pair? 1)
+(pair? #t)

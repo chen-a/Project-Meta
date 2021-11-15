@@ -1,0 +1,13 @@
+;; HO func definitions
+
+(define compose
+  (lambda (f g)
+    (lambda (x) (f (g x)))
+  )
+)
+
+(define l
+  (cons 1 (cons 2 (cons 3 nil))))
+	
+((compose list? fst) l)
+((compose list? snd) l)

@@ -271,6 +271,458 @@
       "comparison": "included",
       "timeout": 0.5,
       "points": 1
+    },
+
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/snd.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/snd.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/pair.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/pair.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/number.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/number.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/nesting.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/nesting.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/list.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/list.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/ints.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/ints.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/function.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/function.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/fst.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/fst.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/eq2.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/eq2.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/eq1.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/eq1.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/deeper-nesting.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/deeper-nesting.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/cons.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/cons.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/conditionals.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/conditionals.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/combinations.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/combinations.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/bools.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/bools.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/atomic/arith.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/atomic/arith.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/quoting/splicing.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/quoting/splicing.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/quoting/quoting.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/quoting/quoting.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/quoting/nested-splicing.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/quoting/nested-splicing.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/quoting/nested-quoting.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/quoting/nested-quoting.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/quoting/dots.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/quoting/dots.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/lambdas/lambdas6.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/lambdas/lambdas6.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/lambdas/lambdas5.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/lambdas/lambdas5.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/lambdas/lambdas4.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/lambdas/lambdas4.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/lambdas/lambdas3.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/lambdas/lambdas3.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/lambdas/lambdas2.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/lambdas/lambdas2.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/lambdas/lambdas1.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/lambdas/lambdas1.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/macros/macro4.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/macros/macro4.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/macros/macro3.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/macros/macro3.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/macros/macro2.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/macros/macro2.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/macros/macro1.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/macros/macro1.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/define/define6.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/define/define6.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/define/define5.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/define/define5.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/define/define4.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/define/define4.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/define/define3.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/define/define3.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/define/define2.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/define/define2.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/define/define1.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/define/define1.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/programs/twice.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/programs/twice.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/programs/length.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/programs/length.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/programs/fib.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/programs/fib.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Eval Test: ./eval-tests/programs/curry.meta",
+      "setup": "",
+      "run": "./testEval.sh ./eval-tests/programs/curry.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
     }
     
   ]

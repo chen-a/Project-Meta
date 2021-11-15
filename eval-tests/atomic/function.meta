@@ -1,0 +1,11 @@
+;; intrinsic functions are functions
+(function? add)
+(function? sub)
+(function? mul)
+(function? div)
+(function? fst)
+(function? snd)
+
+;; not functions
+(function? 1)
+(function? #t)

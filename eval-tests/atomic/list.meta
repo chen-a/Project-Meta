@@ -1,0 +1,4 @@
+(list? (cons 1 (cons 2 nil)))
+(list? '(1 2))
+(list? 1)
+(list? #t)

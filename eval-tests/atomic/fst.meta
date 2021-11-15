@@ -1,0 +1,3 @@
+(fst (cons 1 2))
+(fst (cons #t #f))
+(fst '(1 2))

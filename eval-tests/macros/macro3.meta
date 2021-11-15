@@ -1,0 +1,6 @@
+;; application with quoting / splicing
+((macro (x) '$x) 1)                                 
+
+((macro (x) ''$$x) y)                               
+
+((macro (x) ''$x) y)                                

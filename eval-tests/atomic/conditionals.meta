@@ -1,0 +1,4 @@
+(if #t #t #f)
+(if #f #t #f)
+(if #t 1 2)
+(if #f 1 2)
