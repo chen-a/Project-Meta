@@ -1,2 +1,2 @@
-;; macro application
-((macro (x) x) 1)
+;; macro application to symbol
+((macro (x) x) 'x)
