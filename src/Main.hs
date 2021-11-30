@@ -209,8 +209,8 @@ eval (Constant n) = show n
 eval (Symbol s) = s
 eval (Combination x) = combinationEval x 
 
--- >>> runParser program "'$(add 1 2) "
--- [([Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "add",Constant 1,Constant 2]]]],"")]
+-- >>> runParser program "'(x $(add 2 3) y)"
+-- [([Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Symbol "y"]]],"")]
 
 -- >>> combinationEval [Symbol "quote",Combination [Constant 1,Constant 2,Combination [Symbol "splice",Constant 3]]
 -- parse error (possibly incorrect indentation or mismatched brackets)
@@ -234,6 +234,7 @@ combinationEval ((Symbol s) : xs)
 
     -- others
     | s == "quote" = quote xs
+    | s == "splice" = splice xs
 
 add, sub, mult, divide :: [Expr] -> Int
 add [] = 0
@@ -259,4 +260,17 @@ quote [Combination xs] = quote xs
 -- "1 2 3"
 
 splice :: [Expr] -> String
-splice = undefined
+splice [Constant x] = show x
+splice [Combination xs] = combinationEval xs
+
+-- >>> runParser program "'(x $(add 2 3) y)"
+-- [([Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Symbol "y"]]],"")]
+
+-- >>> combinationEval [Symbol "add",Constant 2,Constant 3]
+-- "5"
+
+-- >>> splice ([Constant 5])
+-- "5"
+
+-- >>> splice ([Combination [Symbol "add",Constant 2,Constant 3]])
+-- "5"
