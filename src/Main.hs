@@ -105,16 +105,16 @@ combination = do
     return (Combination xs)
 
 getNextExpr :: Parser Expr
-getNextExpr = combination <|> bool <|> numbers <|> symbols <|> quote <|> splice
+getNextExpr = combination <|> bool <|> numbers <|> symbols <|> getQuote <|> getSplice
 
-quote :: Parser Expr 
-quote = do 
+getQuote :: Parser Expr 
+getQuote = do 
     char '\''
     x <- getNextExpr
     return (Combination [Symbol "quote", x])
 
-splice :: Parser Expr
-splice = do
+getSplice :: Parser Expr
+getSplice = do
     char '$'
     x <- getNextExpr
     return (Combination [Symbol "splice", x])
@@ -209,11 +209,20 @@ eval (Constant n) = show n
 eval (Symbol s) = s
 eval (Combination x) = combinationEval x 
 
--- >>> runParser program "(add 1 2)"
--- [([Combination [Symbol "add",Constant 1,Constant 2]],"")]
+-- >>> runParser program "'$(add 1 2) "
+-- [([Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "add",Constant 1,Constant 2]]]],"")]
 
--- >>> evalTest (Combination [Symbol "add",Constant 1,Constant 2])
--- "3"
+-- >>> combinationEval [Symbol "quote",Combination [Constant 1,Constant 2,Combination [Symbol "splice",Constant 3]]
+-- parse error (possibly incorrect indentation or mismatched brackets)
+
+
+-- >>> eval (Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3])
+-- parse error on input ‘)’
+
+
+-- >>> eval (Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 2,Constant 3])
+-- parse error on input ‘)’
+
 
 combinationEval :: [Expr] -> String
 combinationEval ((Symbol s) : xs)
@@ -223,8 +232,8 @@ combinationEval ((Symbol s) : xs)
     | s == "mul" = show (mult xs)
     | s == "div" = show (divide xs)
 
-    --lib/bool.meta
-    | s == 
+    -- others
+    | s == "quote" = quote xs
 
 add, sub, mult, divide :: [Expr] -> Int
 add [] = 0
@@ -238,3 +247,16 @@ mult (Constant x : xs) = x * sub xs
 
 divide [] = 1 
 divide (Constant x : xs) = x `div` sub xs -- if only one digit, return (1 / x)
+
+quote :: [Expr] -> String -- currently doesn't include parenthesis
+quote [Constant x] = show x
+quote (Constant x : xs) = show x ++ " " ++ quote xs
+quote [Symbol x] = x
+quote (Symbol x : xs) = x ++ " " ++ quote xs
+quote [Combination xs] = quote xs
+
+-- >>> quote ([Combination [Constant 1,Constant 2,Constant 3]])
+-- "1 2 3"
+
+splice :: [Expr] -> String
+splice = undefined
