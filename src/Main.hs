@@ -221,22 +221,36 @@ eval (Combination x) = combinationEval x
 -- >>> eval (Combination [Symbol "cons",Constant 1,Constant 2])
 -- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(226,1)-(239,41): Non-exhaustive patterns in function combinationEval
 
-
-combinationEval :: [Expr] -> String
+combinationEval :: [Expr] -> String -- currently doesn't report errors
 combinationEval [Combination x] = combinationEval x -- not tested
 combinationEval (Combination x : [xs]) = combinationEval x ++ " " ++ eval xs -- not tested
 combinationEval ((Symbol s) : xs)
-    --lib/arith.meta
+    --intrinsics
+    | s == "eq?" = equality xs
     | s == "add" = show (add xs)
     | s == "sub" = show (sub xs)
     | s == "mul" = show (mult xs)
     | s == "div" = show (divide xs)
-
+    | s == "cons" = addParens (cons xs)
+    | s == "fst" = first xs
+    | s == "snd" = second xs
+    | s == "number?" = number xs
+    | s == "pair?" = undefined
+    | s == "list?" = undefined
+    | s == "function?" = undefined
     -- others
     | s == "quote" = addParens (quote xs)
     | s == "splice" = splice xs
     where
             addParens x = "(" ++ x ++ ")"
+
+equality :: [Expr] -> String
+equality [Constant e1, Constant e2]
+    | e1 == e2 = "#t"
+    | otherwise = "#f"
+equality [Boolean e1, Boolean e2]
+    | e1 == e2 = "#t"
+    | otherwise = "#f"
 
 add, sub, mult, divide :: [Expr] -> Int
 add [] = 0
@@ -251,6 +265,29 @@ mult (Constant x : xs) = x * sub xs
 
 divide [] = 1
 divide (Constant x : xs) = x `div` sub xs -- if only one digit, return (1 / x)
+
+cons :: [Expr] -> String
+cons [Constant e1, Constant e2] = show e1 ++ " . " ++ show e2
+cons [Boolean e1, Boolean e2] = eval (Boolean e1) ++ " . " ++ eval (Boolean e2)
+
+
+first, second, number :: [Expr] -> String
+first [Combination x] = a x
+    where
+        a [Symbol "cons", Constant e1, Constant e2] = show e1
+        a [Symbol "cons", Boolean e1, Boolean e2] = eval (Boolean e1)
+
+second [Combination x] = a x   
+    where
+        a [Symbol "cons", Constant e1, Constant e2] = show e2
+        a [Symbol "cons", Boolean e1, Boolean e2] = eval (Boolean e2)
+
+number [Constant e] = "#t"
+number [Boolean e] = "#f"
+number [Symbol e] = "#f"
+number [Combination e] = "#f"
+
+-- >>> 
 
 quote :: [Expr] -> String -- currently doesn't evaluate levels
 quote [Constant x] = show x
