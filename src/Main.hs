@@ -1,6 +1,6 @@
 module Main where
 
-import Control.Monad 
+import Control.Monad
 import System.Directory (doesFileExist)
 import System.Environment (getArgs)
 import Bird.Parser
@@ -9,14 +9,14 @@ import Data.List
 import Data.Char
 import Data.Bits (Bits(xor))
 
-data Expr = Boolean Bool 
-    | Constant Int 
+data Expr = Boolean Bool
+    | Constant Int
     | Symbol String
     | Combination [Expr]
     deriving Show
 
 
-letter :: Parser Char 
+letter :: Parser Char
 letter = satisfy isAlpha
 
 skip :: Parser String
@@ -26,10 +26,10 @@ skip = spaces
 -- [("","")]
 optional p = do{ _ <- p; return ""} <|> return ""
 
-comments :: Parser Char                                                       
-comments = do 
+comments :: Parser Char
+comments = do
     char ';'
-    manyTill anyChar (char '\n') 
+    manyTill anyChar (char '\n')
     return ';'
 
 garbage :: Parser String
@@ -38,8 +38,8 @@ garbage = many (satisfy isSpace <|> comments)
 -- >>> isSpace 
 -- lexical error in string/character literal at end of input
 
-stripComments :: Parser String 
-stripComments = do 
+stripComments :: Parser String
+stripComments = do
     optional comments
     xs <- sepBy comments (manyTill anyChar (char ';'))
     optional comments
@@ -87,7 +87,7 @@ bool = do
 -- >>> runParser bool "#f"
 -- [(Boolean False,"")]
 
-symbols = do 
+symbols = do
     optional comments
     skip
     optional comments
@@ -95,7 +95,7 @@ symbols = do
     return (Symbol x)
 
 combination :: Parser Expr
-combination = do 
+combination = do
     optional comments
     skip
     optional comments
@@ -107,8 +107,8 @@ combination = do
 getNextExpr :: Parser Expr
 getNextExpr = combination <|> bool <|> numbers <|> symbols <|> getQuote <|> getSplice
 
-getQuote :: Parser Expr 
-getQuote = do 
+getQuote :: Parser Expr
+getQuote = do
     char '\''
     x <- getNextExpr
     return (Combination [Symbol "quote", x])
@@ -167,7 +167,7 @@ metaAST = do
 
 program :: Parser [Expr]
 program = do
-    skip 
+    skip
     optional comments
     ss <- metaAST
     optional comments
@@ -176,7 +176,7 @@ program = do
 
 
 parseMeta :: [Char] -> Either [Expr] [Char]
-parseMeta s = 
+parseMeta s =
     case result of
         [] -> Right "invalid syntax"
         ((metaAST, "") : _) -> Left metaAST
@@ -207,24 +207,24 @@ eval (Boolean b)
     | otherwise = "#f"
 eval (Constant n) = show n
 eval (Symbol s) = s
-eval (Combination x) = combinationEval x 
+eval (Combination x) = combinationEval x
 
--- >>> runParser program "'(x $(add 2 3) y)"
--- [([Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Symbol "y"]]],"")]
+-- >>> runParser program "'[1 2 3]"
+-- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]],"")]
 
--- >>> combinationEval [Symbol "quote",Combination [Constant 1,Constant 2,Combination [Symbol "splice",Constant 3]]
--- parse error (possibly incorrect indentation or mismatched brackets)
+-- >>> combinationEval [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]
+-- "(1 2 3)"
 
-
--- >>> eval (Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3])
--- parse error on input ‘)’
-
+-- >>> eval (Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]])
+-- "(1 2 3)"
 
 -- >>> eval (Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 2,Constant 3])
 -- parse error on input ‘)’
 
 
 combinationEval :: [Expr] -> String
+combinationEval [Combination x] = combinationEval x -- not tested
+combinationEval (Combination x : [xs]) = combinationEval x ++ " " ++ eval xs -- not tested
 combinationEval ((Symbol s) : xs)
     --lib/arith.meta
     | s == "add" = show (add xs)
@@ -233,8 +233,10 @@ combinationEval ((Symbol s) : xs)
     | s == "div" = show (divide xs)
 
     -- others
-    | s == "quote" = quote xs
+    | s == "quote" = addParens (quote xs)
     | s == "splice" = splice xs
+    where
+            addParens x = "(" ++ x ++ ")"
 
 add, sub, mult, divide :: [Expr] -> Int
 add [] = 0
@@ -246,10 +248,10 @@ sub (Constant x : xs) = x - sub xs
 mult [] = 1
 mult (Constant x : xs) = x * sub xs
 
-divide [] = 1 
+divide [] = 1
 divide (Constant x : xs) = x `div` sub xs -- if only one digit, return (1 / x)
 
-quote :: [Expr] -> String -- currently doesn't include parenthesis
+quote :: [Expr] -> String
 quote [Constant x] = show x
 quote (Constant x : xs) = show x ++ " " ++ quote xs
 quote [Symbol x] = x
