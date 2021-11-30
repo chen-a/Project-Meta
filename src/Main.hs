@@ -209,17 +209,17 @@ eval (Constant n) = show n
 eval (Symbol s) = s
 eval (Combination x) = combinationEval x
 
--- >>> runParser program "'[1 2 3]"
--- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]],"")]
+-- >>> runParser program "(add (add 1 2) (add (add 1 2) (add 2 3)))"
+-- [([Combination [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Constant 2,Constant 3]]]],"")]
 
--- >>> combinationEval [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]
--- "(1 2 3)"
+-- >>> combinationEval [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Constant 2,Constant 3]]]
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(242,1)-(243,34): Non-exhaustive patterns in function add
 
 -- >>> eval (Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]])
 -- "(1 2 3)"
 
--- >>> eval (Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 2,Constant 3])
--- parse error on input ‘)’
+-- >>> eval (Combination [Symbol "cons",Constant 1,Constant 2])
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(226,1)-(239,41): Non-exhaustive patterns in function combinationEval
 
 
 combinationEval :: [Expr] -> String
@@ -240,7 +240,8 @@ combinationEval ((Symbol s) : xs)
 
 add, sub, mult, divide :: [Expr] -> Int
 add [] = 0
-add (Constant x : xs) = x + add xs
+add (Constant x : xs) = x + add xs -- currently doesn't evaluate nested adds
+-- add [Combination x : xs] = combinationEval x ++ add xs
 
 sub [] = 0
 sub (Constant x : xs) = x - sub xs
@@ -251,7 +252,7 @@ mult (Constant x : xs) = x * sub xs
 divide [] = 1
 divide (Constant x : xs) = x `div` sub xs -- if only one digit, return (1 / x)
 
-quote :: [Expr] -> String
+quote :: [Expr] -> String -- currently doesn't evaluate levels
 quote [Constant x] = show x
 quote (Constant x : xs) = show x ++ " " ++ quote xs
 quote [Symbol x] = x
@@ -261,7 +262,7 @@ quote [Combination xs] = quote xs
 -- >>> quote ([Combination [Constant 1,Constant 2,Constant 3]])
 -- "1 2 3"
 
-splice :: [Expr] -> String
+splice :: [Expr] -> String -- currently doesn't evaluate levels
 splice [Constant x] = show x
 splice [Combination xs] = combinationEval xs
 
