@@ -7,6 +7,7 @@ import Bird.Parser
 import Bird.Printer
 import Data.List
 import Data.Char
+import Data.Bits (Bits(xor))
 
 data Expr = Boolean Bool 
     | Constant Int 
@@ -162,7 +163,7 @@ metaAST :: Parser [Expr]
 metaAST = do
     skip
     --sepBy (comments <|> skip) getNextExpr
-    sepBy ( garbage ) getNextExpr
+    sepBy (garbage) getNextExpr
 
 program :: Parser [Expr]
 program = do
@@ -183,24 +184,57 @@ parseMeta s =
         where
             result = runParser program s
 
+goEval s  = undefined
+        {-do
+     let parseResult = parseMeta s
+     case parseResult of
+        Left metaAST -> do
+            let evalResult = map evalMeta metaAST
+            case evalResult of
+                Left something -> map putStrLn (map printAst something)
+                Right err -> putStrLn ("Eval error:" ++ err)
+        Right err -> putStrLn ("Parse error: " ++ err) -}
 
-goEval s  = putStrLn "Your implementation continues here"
+evalMeta :: Either [Expr] [Char] -> Either [Expr] [Char]
+evalMeta input = undefined
 
--- >>> runParser program ";; Quoting is a thing \n 'x       ; ==> 'x \n '(1 2 3)  ; ==> (1 2 3) \n '(x y)             ; ==> ('x 'y)"
--- [([Combination [Symbol "quote",Symbol "x"],Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]],Combination [Symbol "quote",Combination [Symbol "x",Symbol "y"]]],"; ==> ('x 'y)")]
+placeholder :: Expr -> String
+placeholder = undefined
 
--- >>> runParser program "'(1 2 3)  ; ==> (1 2 3) \n '(x y)             ; ==> ('x 'y)"
--- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]],Combination [Symbol "quote",Combination [Symbol "x",Symbol "y"]]],"; ==> ('x 'y)")]
+eval :: Expr -> String
+eval (Boolean b)
+    | b = "#t"
+    | otherwise = "#f"
+eval (Constant n) = show n
+eval (Symbol s) = s
+eval (Combination x) = combinationEval x 
 
--- >>> runParser program "'(x y)             ; ==> ('x 'y)"
--- [([Combination [Symbol "quote",Combination [Symbol "x",Symbol "y"]]],"; ==> ('x 'y)")]
+-- >>> runParser program "(add 1 2)"
+-- [([Combination [Symbol "add",Constant 1,Constant 2]],"")]
 
--- >>> runParser (optional comments) ";; Quoting is a thing \n 'x                              ; ==> 'x    \n '(1 2 3)"
--- [(""," 'x                              ; ==> 'x    \n '(1 2 3)")]
+-- >>> evalTest (Combination [Symbol "add",Constant 1,Constant 2])
+-- "3"
 
--- >>> runParser program "'(1 . (2 . ()))       ; ==> (1 2) \n ;; Splicing is also a thing... I'm assuming here that you have (most of) the intrinsics implemented: \n '(1 2 $3)    ; ==> (1 2 3)"
--- [([Combination [Symbol "quote",Combination [Constant 1,Symbol ".",Combination [Constant 2,Symbol ".",Combination []]]]],"'(1 2 $3)    ; ==> (1 2 3)")]
+combinationEval :: [Expr] -> String
+combinationEval ((Symbol s) : xs)
+    --lib/arith.meta
+    | s == "add" = show (add xs)
+    | s == "sub" = show (sub xs)
+    | s == "mul" = show (mult xs)
+    | s == "div" = show (divide xs)
 
+    --lib/bool.meta
+    | s == 
 
--- >>> runParser metaAST " 'x                              ; ==> 'x    \n '(1 2 3)"
--- [([Combination [Symbol "quote",Symbol "x"],Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]],"")]
+add, sub, mult, divide :: [Expr] -> Int
+add [] = 0
+add (Constant x : xs) = x + add xs
+
+sub [] = 0
+sub (Constant x : xs) = x - sub xs
+
+mult [] = 1
+mult (Constant x : xs) = x * sub xs
+
+divide [] = 1 
+divide (Constant x : xs) = x `div` sub xs -- if only one digit, return (1 / x)
