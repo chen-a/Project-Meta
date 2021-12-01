@@ -231,7 +231,9 @@ combinationEval ((Symbol s) : xs)
     | s == "splice" = splice xs
     where
             addParens x = "(" ++ x ++ ")"
-            consCombine [e1, e2] = eval e1 ++ " . " ++ eval e2
+            consCombine [] = ""
+            consCombine [e] = eval e
+            consCombine (e1:e2) = eval e1 ++ " . " ++ consCombine e2
 
 equality :: [Expr] -> Expr
 equality [Constant e1, Constant e2]
@@ -247,19 +249,41 @@ add, sub, mult, divide :: [Expr] -> Expr
 add [Constant e1, Constant e2] = Constant (e1 + e2)
 add [Combination ((Symbol x):xs)] = add xs
 add [Constant e1, Combination e2] = add [Constant e1, add [Combination e2]]
+add [Constant e1, Symbol "nil"] = Constant e1
+add [Symbol "nil", Constant e2] = Constant e2
 add [Combination e1, Constant e2] = add [add [Combination e1], Constant e2]
+add [Combination e1, Combination e2] = add [add [Combination e1], add [Combination e2]]
 
 sub [Constant e1, Constant e2] = Constant (e1 - e2)
 sub [Combination ((Symbol x):xs)] = sub xs
 sub [Constant e1, Combination e2] = sub [Constant e1, add [Combination e2]]
+sub [Constant e1, Symbol "nil"] = Constant e1
+sub [Symbol "nil", Constant e2] = Constant (-1 * e2)
 sub [Combination e1, Constant e2] = sub [sub [Combination e1], Constant e2]
+sub [Combination e1, Combination e2] = sub [sub [Combination e1], sub [Combination e2]]
 
 mult [Constant e1, Constant e2] = Constant (e1 * e2)
 divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 
+-- >>> runParser program "(cons 1 (cons 2 (cons 3 (cons 4 nil))))"
+-- [([Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]]]],"")]
+
+-- >>> runParser program "(cons 4 nil)"
+-- [([Combination [Symbol "cons",Constant 4,Symbol "nil"]],"")]
+
+-- >>> cons [Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]]]
+-- [Constant 1,Constant 2,Constant 3,Constant 4]
+
 cons :: [Expr] -> [Expr]
+cons [Constant e] = [Constant e]
+cons [Boolean e] = [Boolean e]
 cons [Constant e1, Constant e2] = [Constant e1, Constant e2]
+cons [Constant e1, Symbol "nil"] = [Constant e1]
+cons [Constant e1, Combination (Symbol "cons" : xs)] = (Constant e1: cons xs)
+cons [Symbol "nil", Constant e2] = [Constant e2]
 cons [Boolean e1, Boolean e2] = [Boolean e1, Boolean e2]
+cons [Combination (Symbol "add" : xs)] = cons [add xs]
+cons [Combination (Symbol "add" : xs), Symbol "nil"] = cons [add xs]
 
 first, second, number :: [Expr] -> Expr
 first [Combination x] = a x
@@ -273,8 +297,10 @@ first [Combination x] = a x
 -- >>> runParser program "(add 1 (add 2 3))"
 -- [([Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 2,Constant 3]]],"")]
 
--- >>> goEval "(add 1 (add 2 3))"
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:257:1-51: Non-exhaustive patterns in function add
+-- >>> goEval "add 3 ( add 4)"
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(247,1)-(250,75): Non-exhaustive patterns in function add
+
+
 second [Combination x] = a x   
     where
         a [Symbol "cons", Constant e1, Constant e2] = Constant e2
