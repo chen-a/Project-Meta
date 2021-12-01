@@ -184,7 +184,13 @@ parseMeta s =
         where
             result = runParser program s
 
-goEval s  = undefined
+goEval s  = do
+     -- let ns = intercalate " " (lines s)
+     let result = parseMeta s
+     case result of
+        Left metaAST -> mapM_ putStrLn (map eval metaAST)
+        Right err -> putStrLn ("error: " ++ err) 
+
         {-do
      let parseResult = parseMeta s
      case parseResult of
@@ -226,16 +232,16 @@ combinationEval [Combination x] = combinationEval x -- not tested
 combinationEval (Combination x : [xs]) = combinationEval x ++ " " ++ eval xs -- not tested
 combinationEval ((Symbol s) : xs)
     --intrinsics
-    | s == "eq?" = equality xs
-    | s == "add" = show (add xs)
-    | s == "sub" = show (sub xs)
-    | s == "mul" = show (mult xs)
-    | s == "div" = show (divide xs)
-    | s == "cons" = addParens (cons xs)
-    | s == "fst" = first xs
-    | s == "snd" = second xs
-    | s == "number?" = number xs
-    | s == "pair?" = undefined
+    | s == "eq?" = eval (equality xs)
+    | s == "add" = eval (add xs)
+    | s == "sub" = eval (sub xs)
+    | s == "mul" = eval (mult xs)
+    | s == "div" = eval (divide xs)
+    | s == "cons" = addParens (consCombine (cons xs))
+    | s == "fst" = eval (first xs)
+    | s == "snd" = eval (second xs)
+    | s == "number?" = eval (number xs)
+    | s == "pair?" = eval (pair xs)
     | s == "list?" = undefined
     | s == "function?" = undefined
     -- others
@@ -243,51 +249,52 @@ combinationEval ((Symbol s) : xs)
     | s == "splice" = splice xs
     where
             addParens x = "(" ++ x ++ ")"
+            consCombine [e1, e2] = eval e1 ++ " . " ++ eval e2
 
-equality :: [Expr] -> String
+equality :: [Expr] -> Expr
 equality [Constant e1, Constant e2]
-    | e1 == e2 = "#t"
-    | otherwise = "#f"
+    | e1 == e2 = Boolean True
+    | otherwise = Boolean False
 equality [Boolean e1, Boolean e2]
-    | e1 == e2 = "#t"
-    | otherwise = "#f"
+    | e1 == e2 = Boolean True
+    | otherwise = Boolean False
 
-add, sub, mult, divide :: [Expr] -> Int
-add [] = 0
-add (Constant x : xs) = x + add xs -- currently doesn't evaluate nested adds
--- add [Combination x : xs] = combinationEval x ++ add xs
+add, sub, mult, divide :: [Expr] -> Expr
+add [Constant e1, Constant e2] = Constant (e1 + e2)
+sub [Constant e1, Constant e2] = Constant (e1 - e2)
+mult [Constant e1, Constant e2] = Constant (e1 * e2)
+divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 
-sub [] = 0
-sub (Constant x : xs) = x - sub xs
+cons :: [Expr] -> [Expr]
+cons [Constant e1, Constant e2] = [Constant e1, Constant e2]
+cons [Boolean e1, Boolean e2] = [Boolean e1, Boolean e2]
 
-mult [] = 1
-mult (Constant x : xs) = x * sub xs
-
-divide [] = 1
-divide (Constant x : xs) = x `div` sub xs -- if only one digit, return (1 / x)
-
-cons :: [Expr] -> String
-cons [Constant e1, Constant e2] = show e1 ++ " . " ++ show e2
-cons [Boolean e1, Boolean e2] = eval (Boolean e1) ++ " . " ++ eval (Boolean e2)
-
-
-first, second, number :: [Expr] -> String
+first, second, number :: [Expr] -> Expr
 first [Combination x] = a x
     where
-        a [Symbol "cons", Constant e1, Constant e2] = show e1
-        a [Symbol "cons", Boolean e1, Boolean e2] = eval (Boolean e1)
+        a [Symbol "cons", Constant e1, Constant e2] = Constant e1
+        a [Symbol "cons", Boolean e1, Boolean e2] =  Boolean e1
 
 second [Combination x] = a x   
     where
-        a [Symbol "cons", Constant e1, Constant e2] = show e2
-        a [Symbol "cons", Boolean e1, Boolean e2] = eval (Boolean e2)
+        a [Symbol "cons", Constant e1, Constant e2] = Constant e2
+        a [Symbol "cons", Boolean e1, Boolean e2] = Boolean e2
 
-number [Constant e] = "#t"
-number [Boolean e] = "#f"
-number [Symbol e] = "#f"
-number [Combination e] = "#f"
+number [Constant e] = Boolean True
+number [Boolean e] = Boolean False
+number [Symbol e] = Boolean False
+number [Combination e] = Boolean False
 
--- >>> 
+-- >>> runParser program "(pair? '(1 2))"
+-- [([Combination [Symbol "pair?",Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]],"")]
+
+-- >>> pair ()
+
+pair :: [Expr] -> Expr
+pair [Constant e] = Boolean False 
+pair [Boolean e] = Boolean False
+-- pair [Combination e] = pair (combinationEval [Combination e])
+
 
 quote :: [Expr] -> String -- currently doesn't evaluate levels
 quote [Constant x] = show x
@@ -314,3 +321,15 @@ splice [Combination xs] = combinationEval xs
 
 -- >>> splice ([Combination [Symbol "add",Constant 2,Constant 3]])
 -- "5"
+
+
+-- stuff that might help with library------------------
+-- add [] = 0
+-- add (Constant x : xs) = x + add xs -- currently doesn't evaluate nested adds
+-- add [Combination x : xs] = combinationEval x ++ add xs
+-- sub [] = 0
+-- sub (Constant x : xs) = x - sub xs
+-- mult [] = 1
+-- mult (Constant x : xs) = x * sub xs
+-- divide [] = 1
+-- divide (Constant x : xs) = x `div` sub xs -- if only one digit, return (1 / x)
