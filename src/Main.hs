@@ -225,7 +225,7 @@ combinationEval ((Symbol s) : xs)
     | s == "number?" = eval (number xs)
     | s == "pair?" = eval (pair xs)
     | s == "list?" = eval (list xs)
-    | s == "function?" = undefined
+    | s == "function?" = eval (function xs)
     -- others
     | s == "quote" = addParens (quote xs)
     | s == "splice" = splice xs
@@ -242,18 +242,6 @@ equality [Boolean e1, Boolean e2]
     | otherwise = Boolean False
 equality [Constant e1, Combination (Symbol "add":xs)] = equality [Constant e1, add xs]
 equality [Combination (Symbol "add":xs), Constant e2] = equality [add xs, Constant e2]
-
-
--- >>> runParser program "(eq? (add 1 2) 3) "
--- [([Combination [Symbol "eq?",Combination [Symbol "add",Constant 1,Constant 2],Constant 3]],"")]
-
--- >>> equality [Combination [Symbol "add",Constant 1,Constant 2],Constant 3]
--- Boolean True
-
--- >>> goEval "(eq? (add 1 2) 3)"
-
--- >>> sub [Constant 1,Combination [Symbol "add",Constant 3,Constant 4]]
--- Constant (-6)
 
 add, sub, mult, divide :: [Expr] -> Expr
 add [Constant e1, Constant e2] = Constant (e1 + e2)
@@ -310,6 +298,15 @@ list [Constant e] = Boolean False
 list [Boolean e] = Boolean False 
 list [Symbol e] = Boolean False 
 list (x:xs) = Boolean True
+
+function :: [Expr] -> Expr
+function [Symbol e] = if e `elem` flist 
+    then Boolean True 
+    else Boolean False
+        where flist = ["eq?", "add", "sub", "mul", "div", "cons", "fst", "snd", "number?", "pair?", "list?", "function?"]
+function [Constant e] = Boolean False 
+function [Boolean e] = Boolean False 
+function [Combination e] = Boolean False
 
 quote :: [Expr] -> String -- currently doesn't evaluate levels
 quote [Constant x] = show x
