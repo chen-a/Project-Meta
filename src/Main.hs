@@ -265,14 +265,14 @@ sub [Combination e1, Combination e2] = sub [sub [Combination e1], sub [Combinati
 mult [Constant e1, Constant e2] = Constant (e1 * e2)
 divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 
--- >>> runParser program "(cons (add 1 (add 3 (add 4 5))) (cons 1 (cons 3 (cons (add 2 (add 3 4)) nil))))"
--- [([Combination [Symbol "cons",Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]],"")]
+-- >>> runParser program "(cons 1 (cons 2 (cons 3 (cons 4 nil))))"
+-- [([Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]]]],"")]
 
--- >>> runParser program "(cons 1 (cons 3 (cons (add 2 (add 3 4)))))"
--- [([Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]]]]]],"")]
+-- >>> add [Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Constant 2,Constant 3]]]
+-- Constant 11
 
--- >>> cons [Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]
--- [Constant 13,Constant 1,Constant 3,Constant 9]
+-- >>> eval (Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]]])
+-- "(1 . 2 . 3 . 4)"
 
 cons :: [Expr] -> [Expr]
 cons [Constant e] = [Constant e]
