@@ -236,7 +236,7 @@ combinationEval ((Symbol s) : xs)
     | s == "snd" = eval (second xs)
     | s == "number?" = eval (number xs)
     | s == "pair?" = eval (pair xs)
-    | s == "list?" = undefined
+    | s == "list?" = eval (list xs)
     | s == "function?" = undefined
     -- others
     | s == "quote" = addParens (quote xs)
@@ -291,10 +291,6 @@ number [Boolean e] = Boolean False
 number [Symbol e] = Boolean False
 number [Combination e] = Boolean False
 
--- >>> runParser program "(pair? 1)"
--- [([Combination [Symbol "pair?",Constant 1]],"")]
--- >>> pair [Combination [Symbol "pair?",Constant 1]]
--- Boolean False
 pair :: [Expr] -> Expr
 pair [Constant e] = Boolean False 
 pair [Boolean e] = Boolean False
@@ -303,6 +299,18 @@ pair [Boolean e1, Boolean e2] = Boolean True
 pair [Combination x] = pair x
 pair (Symbol x : ys) = pair ys
 -- pair [Combination (Symbol x: xs)] = pair xs
+
+list :: [Expr] -> Expr
+list [Constant e] = Boolean False 
+list [Boolean e] = Boolean False 
+list [Symbol e] = Boolean False 
+list (x:xs) = Boolean True
+
+-- >>> runParser program "(list? '(1 2))"
+-- [([Combination [Symbol "list?",Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]],"")]
+
+-- >>> list [Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]
+-- Boolean True
 
 
 quote :: [Expr] -> String -- currently doesn't evaluate levels
