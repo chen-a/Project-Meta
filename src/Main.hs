@@ -201,12 +201,6 @@ goEval s  = do
                 Right err -> putStrLn ("Eval error:" ++ err)
         Right err -> putStrLn ("Parse error: " ++ err) -}
 
-evalMeta :: Either [Expr] [Char] -> Either [Expr] [Char]
-evalMeta input = undefined
-
-placeholder :: Expr -> String
-placeholder = undefined
-
 eval :: Expr -> String
 eval (Boolean b)
     | b = "#t"
@@ -219,13 +213,13 @@ eval (Combination x) = combinationEval x
 -- [([Combination [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Constant 2,Constant 3]]]],"")]
 
 -- >>> combinationEval [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Constant 2,Constant 3]]]
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(242,1)-(243,34): Non-exhaustive patterns in function add
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:257:1-51: Non-exhaustive patterns in function add
 
 -- >>> eval (Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]])
 -- "(1 2 3)"
 
 -- >>> eval (Combination [Symbol "cons",Constant 1,Constant 2])
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(226,1)-(239,41): Non-exhaustive patterns in function combinationEval
+-- "(1 . 2)"
 
 combinationEval :: [Expr] -> String -- currently doesn't report errors
 combinationEval [Combination x] = combinationEval x -- not tested
@@ -274,6 +268,18 @@ first [Combination x] = a x
     where
         a [Symbol "cons", Constant e1, Constant e2] = Constant e1
         a [Symbol "cons", Boolean e1, Boolean e2] =  Boolean e1
+        a [Constant e1, Constant e2] = Constant e1
+        a [Symbol "quote", Combination y] = first [Combination y]
+       
+
+-- >>> runParser program "(fst '(1 2))"
+-- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2]]],"")]
+
+-- >>> first [Combination [Constant 1,Constant 2]]
+-- Constant 1
+
+-- >>> first [Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]
+-- Constant 1
 
 second [Combination x] = a x   
     where
