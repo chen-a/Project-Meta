@@ -207,29 +207,29 @@ eval (Boolean b)
     | otherwise = "#f"
 eval (Constant n) = show n
 eval (Symbol s) = s
-eval (Combination x) = combinationEval x
+eval (Combination x) = printCombo (combinationEval x)
 
-combinationEval :: [Expr] -> String -- currently doesn't report errors
+combinationEval :: [Expr] -> [Expr] -- currently doesn't report errors
 combinationEval [Combination x] = combinationEval x -- not tested
-combinationEval (Combination x : [xs]) = combinationEval x ++ " " ++ eval xs -- not tested
+-- combinationEval (Combination x : [xs]) = combinationEval x ++ " " ++ eval xs -- does this even do anything
 combinationEval ((Symbol s) : xs)
     --intrinsics
-    | s == "eq?" = eval (equality xs)
-    | s == "add" = eval (add xs)
-    | s == "sub" = eval (sub xs)
-    | s == "mul" = eval (mult xs)
-    | s == "div" = eval (divide xs)
-    | s == "cons" = addParens (consCombine (cons xs)) -- only apply "." if there is no nested list
-    | s == "fst" = eval (first xs)
-    | s == "snd" = eval (second xs)
-    | s == "number?" = eval (number xs)
-    | s == "pair?" = eval (pair xs)
-    | s == "list?" = eval (list xs)
-    | s == "function?" = eval (function xs)
+    | s == "eq?" = [equality xs]
+    | s == "add" = [add xs]
+    | s == "sub" = [sub xs]
+    | s == "mul" = [mult xs]
+    | s == "div" = [divide xs]
+    | s == "cons" = cons xs -- only apply "." if there is no nested list
+    | s == "fst" = [first xs]
+    | s == "snd" = [second xs]
+    | s == "number?" = [number xs]
+    | s == "pair?" = [pair xs]
+    | s == "list?" = [list xs]
+    | s == "function?" = [function xs]
     -- special forms
-    | s == "quote" = addParens (quote xs)
+    | s == "quote" = quote xs
     | s == "splice" = splice xs
-    | s == "if" = eval (conditional xs)
+    | s == "if" = [conditional xs]
     where
             addParens x = "(" ++ x ++ ")"
             consCombine [] = ""
@@ -337,15 +337,15 @@ function [Constant e] = Boolean False
 function [Boolean e] = Boolean False 
 function [Combination e] = Boolean False
 
-quote :: [Expr] -> String -- currently doesn't evaluate levels
-quote [Constant x] = show x
-quote (Constant x : xs) = show x ++ " " ++ quote xs
-quote [Symbol x] = x
-quote (Symbol x : xs) = x ++ " " ++ quote xs
+quote :: [Expr] -> [Expr] -- currently doesn't evaluate levels
+quote [Constant x] = [Constant x]
+quote (Constant x : xs) = Constant x : quote xs
+quote [Symbol x] = [Symbol x]
+quote (Symbol x : xs) = Symbol x : quote xs
 quote [Combination xs] = quote xs
 
-splice :: [Expr] -> String -- currently doesn't evaluate levels
-splice [Constant x] = show x
+splice :: [Expr] -> [Expr] -- currently doesn't evaluate levels
+splice [Constant x] = [Constant x]
 splice [Combination xs] = combinationEval xs
 
 conditional :: [Expr] -> Expr 
