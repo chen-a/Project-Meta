@@ -209,7 +209,19 @@ eval (Constant n) = show n
 eval (Symbol s) = s
 eval (Combination x) = printCombo (combinationEval x)
 
+-- >>> runParser program "(snd (cons 1 2))"
+-- [([Combination [Symbol "snd",Combination [Symbol "cons",Constant 1,Constant 2]]],"")]
+
+-- >>> eval (Combination [Symbol "snd",Combination [Symbol "cons",Constant 1,Constant 2]])
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:218:1-50: Non-exhaustive patterns in function printCombo
+
+-- >>> combinationEval [Symbol "snd",Combination [Symbol "cons",Constant 1,Constant 2]]
+-- [Constant 2]
+
 printCombo :: [Expr] -> String
+printCombo [Boolean b] = eval (Boolean b)
+printCombo [Constant n] = eval (Constant n)
+printCombo [Symbol s] = eval (Symbol s)
 printCombo (x:xs) = eval x ++ " " ++ printCombo xs
 
 combinationEval :: [Expr] -> [Expr] -- currently doesn't report errors
