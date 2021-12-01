@@ -269,7 +269,7 @@ first [Combination x] = a x
         a [Symbol "cons", Constant e1, Constant e2] = Constant e1
         a [Symbol "cons", Boolean e1, Boolean e2] =  Boolean e1
         a [Constant e1, Constant e2] = Constant e1
-        a [Symbol "quote", Combination y] = first [Combination y]
+        a [Symbol "quote", Combination y] = first [Combination y] -- cheating???
        
 
 -- >>> runParser program "(fst '(1 2))"
@@ -291,15 +291,18 @@ number [Boolean e] = Boolean False
 number [Symbol e] = Boolean False
 number [Combination e] = Boolean False
 
--- >>> runParser program "(pair? '(1 2))"
--- [([Combination [Symbol "pair?",Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]],"")]
-
--- >>> pair ()
-
+-- >>> runParser program "(pair? 1)"
+-- [([Combination [Symbol "pair?",Constant 1]],"")]
+-- >>> pair [Combination [Symbol "pair?",Constant 1]]
+-- Boolean False
 pair :: [Expr] -> Expr
 pair [Constant e] = Boolean False 
 pair [Boolean e] = Boolean False
--- pair [Combination e] = pair (combinationEval [Combination e])
+pair [Constant e1, Constant e2] = Boolean True 
+pair [Boolean e1, Boolean e2] = Boolean True
+pair [Combination x] = pair x
+pair (Symbol x : ys) = pair ys
+-- pair [Combination (Symbol x: xs)] = pair xs
 
 
 quote :: [Expr] -> String -- currently doesn't evaluate levels
