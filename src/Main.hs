@@ -209,18 +209,6 @@ eval (Constant n) = show n
 eval (Symbol s) = s
 eval (Combination x) = combinationEval x
 
--- >>> runParser program "(add (add 1 2) (add (add 1 2) (add 2 3)))"
--- [([Combination [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Constant 2,Constant 3]]]],"")]
-
--- >>> combinationEval [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Combination [Symbol "add",Constant 1,Constant 2],Combination [Symbol "add",Constant 2,Constant 3]]]
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:257:1-51: Non-exhaustive patterns in function add
-
--- >>> eval (Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]])
--- "(1 2 3)"
-
--- >>> eval (Combination [Symbol "cons",Constant 1,Constant 2])
--- "(1 . 2)"
-
 combinationEval :: [Expr] -> String -- currently doesn't report errors
 combinationEval [Combination x] = combinationEval x -- not tested
 combinationEval (Combination x : [xs]) = combinationEval x ++ " " ++ eval xs -- not tested
@@ -252,10 +240,32 @@ equality [Constant e1, Constant e2]
 equality [Boolean e1, Boolean e2]
     | e1 == e2 = Boolean True
     | otherwise = Boolean False
+equality [Constant e1, Combination (Symbol "add":xs)] = equality [Constant e1, add xs]
+equality [Combination (Symbol "add":xs), Constant e2] = equality [add xs, Constant e2]
+
+
+-- >>> runParser program "(eq? (add 1 2) 3) "
+-- [([Combination [Symbol "eq?",Combination [Symbol "add",Constant 1,Constant 2],Constant 3]],"")]
+
+-- >>> equality [Combination [Symbol "add",Constant 1,Constant 2],Constant 3]
+-- Boolean True
+
+-- >>> goEval "(eq? (add 1 2) 3)"
+
+-- >>> sub [Constant 1,Combination [Symbol "add",Constant 3,Constant 4]]
+-- Constant (-6)
 
 add, sub, mult, divide :: [Expr] -> Expr
 add [Constant e1, Constant e2] = Constant (e1 + e2)
+add [Combination ((Symbol x):xs)] = add xs
+add [Constant e1, Combination e2] = add [Constant e1, add [Combination e2]]
+add [Combination e1, Constant e2] = add [add [Combination e1], Constant e2]
+
 sub [Constant e1, Constant e2] = Constant (e1 - e2)
+sub [Combination ((Symbol x):xs)] = sub xs
+sub [Constant e1, Combination e2] = sub [Constant e1, add [Combination e2]]
+sub [Combination e1, Constant e2] = sub [sub [Combination e1], Constant e2]
+
 mult [Constant e1, Constant e2] = Constant (e1 * e2)
 divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 
@@ -272,15 +282,11 @@ first [Combination x] = a x
         a [Symbol "quote", Combination y] = first [Combination y] -- cheating???
        
 
--- >>> runParser program "(fst '(1 2))"
--- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2]]],"")]
+-- >>> runParser program "(add 1 (add 2 3))"
+-- [([Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 2,Constant 3]]],"")]
 
--- >>> first [Combination [Constant 1,Constant 2]]
--- Constant 1
-
--- >>> first [Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]
--- Constant 1
-
+-- >>> goEval "(add 1 (add 2 3))"
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:257:1-51: Non-exhaustive patterns in function add
 second [Combination x] = a x   
     where
         a [Symbol "cons", Constant e1, Constant e2] = Constant e2
@@ -298,7 +304,6 @@ pair [Constant e1, Constant e2] = Boolean True
 pair [Boolean e1, Boolean e2] = Boolean True
 pair [Combination x] = pair x
 pair (Symbol x : ys) = pair ys
--- pair [Combination (Symbol x: xs)] = pair xs
 
 list :: [Expr] -> Expr
 list [Constant e] = Boolean False 
@@ -306,22 +311,12 @@ list [Boolean e] = Boolean False
 list [Symbol e] = Boolean False 
 list (x:xs) = Boolean True
 
--- >>> runParser program "(list? '(1 2))"
--- [([Combination [Symbol "list?",Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]],"")]
-
--- >>> list [Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]
--- Boolean True
-
-
 quote :: [Expr] -> String -- currently doesn't evaluate levels
 quote [Constant x] = show x
 quote (Constant x : xs) = show x ++ " " ++ quote xs
 quote [Symbol x] = x
 quote (Symbol x : xs) = x ++ " " ++ quote xs
 quote [Combination xs] = quote xs
-
--- >>> quote ([Combination [Constant 1,Constant 2,Constant 3]])
--- "1 2 3"
 
 splice :: [Expr] -> String -- currently doesn't evaluate levels
 splice [Constant x] = show x
