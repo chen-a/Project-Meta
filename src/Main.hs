@@ -265,25 +265,27 @@ sub [Combination e1, Combination e2] = sub [sub [Combination e1], sub [Combinati
 mult [Constant e1, Constant e2] = Constant (e1 * e2)
 divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 
--- >>> runParser program "(cons 1 (cons 2 (cons 3 (cons 4 nil))))"
--- [([Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]]]],"")]
+-- >>> runParser program "(cons (add 1 (add 3 (add 4 5))) (cons 1 (cons 3 (cons (add 2 (add 3 4)) nil))))"
+-- [([Combination [Symbol "cons",Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]],"")]
 
--- >>> runParser program "(cons 4 nil)"
--- [([Combination [Symbol "cons",Constant 4,Symbol "nil"]],"")]
+-- >>> runParser program "(cons 1 (cons 3 (cons (add 2 (add 3 4)))))"
+-- [([Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]]]]]],"")]
 
--- >>> cons [Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]]]
--- [Constant 1,Constant 2,Constant 3,Constant 4]
+-- >>> cons [Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]
+-- [Constant 13,Constant 1,Constant 3,Constant 9]
 
 cons :: [Expr] -> [Expr]
 cons [Constant e] = [Constant e]
 cons [Boolean e] = [Boolean e]
 cons [Constant e1, Constant e2] = [Constant e1, Constant e2]
 cons [Constant e1, Symbol "nil"] = [Constant e1]
-cons [Constant e1, Combination (Symbol "cons" : xs)] = (Constant e1: cons xs)
+cons [Constant e1, Combination (Symbol "cons" : xs)] = Constant e1: cons xs
+cons [Combination (Symbol "cons" : xs), Constant e2] = cons xs ++ [Constant e2]
 cons [Symbol "nil", Constant e2] = [Constant e2]
 cons [Boolean e1, Boolean e2] = [Boolean e1, Boolean e2]
 cons [Combination (Symbol "add" : xs)] = cons [add xs]
 cons [Combination (Symbol "add" : xs), Symbol "nil"] = cons [add xs]
+cons [Combination (Symbol "add" : xs), Combination (Symbol "cons" : ys)] = cons [add xs] ++ cons ys
 
 first, second, number :: [Expr] -> Expr
 first [Combination x] = a x
