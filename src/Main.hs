@@ -349,8 +349,14 @@ splice [Constant x] = show x
 splice [Combination xs] = combinationEval xs
 
 conditional :: [Expr] -> Expr 
-conditional [Symbol "#t", x, y] = x
-conditional [Symbol "#f", x, y] = y
+conditional [Boolean True, x, y] = x
+conditional [Boolean False, x, y] = y
+
+-- >>> runParser program "(if #t #t #f)"
+-- [([Combination [Symbol "if",Boolean True,Boolean True,Boolean False]],"")]
+
+-- >>> conditional [Boolean True,Boolean True,Boolean False]
+-- Boolean True
 
 -- >>> runParser program "'(x $(add 2 3) y)"
 -- [([Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Symbol "y"]]],"")]
