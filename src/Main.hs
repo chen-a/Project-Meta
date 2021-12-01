@@ -209,6 +209,9 @@ eval (Constant n) = show n
 eval (Symbol s) = s
 eval (Combination x) = printCombo (combinationEval x)
 
+printCombo :: [Expr] -> String
+printCombo (x:xs) = eval x ++ " " ++ printCombo xs
+
 combinationEval :: [Expr] -> [Expr] -- currently doesn't report errors
 combinationEval [Combination x] = combinationEval x -- not tested
 -- combinationEval (Combination x : [xs]) = combinationEval x ++ " " ++ eval xs -- does this even do anything
