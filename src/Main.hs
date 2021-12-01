@@ -219,16 +219,17 @@ combinationEval ((Symbol s) : xs)
     | s == "sub" = eval (sub xs)
     | s == "mul" = eval (mult xs)
     | s == "div" = eval (divide xs)
-    | s == "cons" = addParens (consCombine (cons xs))
+    | s == "cons" = addParens (consCombine (cons xs)) -- only apply "." if there is no nested list
     | s == "fst" = eval (first xs)
     | s == "snd" = eval (second xs)
     | s == "number?" = eval (number xs)
     | s == "pair?" = eval (pair xs)
     | s == "list?" = eval (list xs)
     | s == "function?" = eval (function xs)
-    -- others
+    -- special forms
     | s == "quote" = addParens (quote xs)
     | s == "splice" = splice xs
+    | s == "if" = eval (conditional xs)
     where
             addParens x = "(" ++ x ++ ")"
             consCombine [] = ""
@@ -274,7 +275,7 @@ divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 -- >>> cons [Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]
 -- [Constant 13,Constant 1,Constant 3,Constant 9]
 
-cons :: [Expr] -> [Expr]
+cons :: [Expr] -> [Expr] 
 cons [Constant e] = [Constant e]
 cons [Boolean e] = [Boolean e]
 cons [Constant e1, Constant e2] = [Constant e1, Constant e2]
@@ -346,6 +347,10 @@ quote [Combination xs] = quote xs
 splice :: [Expr] -> String -- currently doesn't evaluate levels
 splice [Constant x] = show x
 splice [Combination xs] = combinationEval xs
+
+conditional :: [Expr] -> Expr 
+conditional [Symbol "#t", x, y] = x
+conditional [Symbol "#f", x, y] = y
 
 -- >>> runParser program "'(x $(add 2 3) y)"
 -- [([Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Symbol "y"]]],"")]
