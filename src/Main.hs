@@ -72,9 +72,6 @@ numbers = do
     x <- int
     return (Constant x)
 
--- >>> runParser numbers "-1234 5"
--- [(Constant (-1234)," 5")]
-
 bool :: Parser Expr
 bool = do
     optional comments
@@ -84,9 +81,6 @@ bool = do
     value <- satisfy (== 't') <|> satisfy (== 'f')
     if value == 't' then return (Boolean True)
     else return (Boolean False)
-
--- >>> runParser bool "#f"
--- [(Boolean False,"")]
 
 symbols = do
     optional comments
@@ -175,6 +169,8 @@ program = do
     skip
     return ss
 
+-- >>> runParser program "(define length \n (lambda (lst) \n (if (null? lst) \n 0 \n (+ 1 (length (snd lst))))))"
+-- [([Combination [Symbol "define",Symbol "length",Combination [Symbol "lambda",Combination [Symbol "lst"],Combination [Symbol "if",Combination [Symbol "null?",Symbol "lst"],Constant 0,Combination [Symbol "+",Constant 1,Combination [Symbol "length",Combination [Symbol "snd",Symbol "lst"]]]]]]],"")]
 
 parseMeta :: [Char] -> Either [Expr] [Char]
 parseMeta s =
@@ -189,7 +185,7 @@ goEval s  = do
      -- let ns = intercalate " " (lines s)
      let result = parseMeta s
      case result of
-        Left metaAST -> mapM_ putStrLn (map eval metaAST)
+        Left metaAST -> mapM_ putStrLn (map printEval (map eval metaAST))
         Right err -> putStrLn ("error: " ++ err)
 
         {-do
@@ -202,19 +198,18 @@ goEval s  = do
                 Right err -> putStrLn ("Eval error:" ++ err)
         Right err -> putStrLn ("Parse error: " ++ err) -}
 
-eval :: Expr -> String
-eval (Boolean b)
+printEval :: Expr -> String 
+printEval (Boolean b)
     | b = "#t"
     | otherwise = "#f"
-eval (Constant n) = show n
-eval (Symbol s) = s
-eval (Combination x) =  printCombo (combinationEval x)
-
+printEval (Constant n) = show n
+printEval (Symbol s) = s
+printEval (Combination x) = printCombo (Combination x) 
 
 printCombo :: Expr -> String
-printCombo (Boolean b) = eval (Boolean b)
-printCombo (Constant n) = eval (Constant n)
-printCombo (Symbol s) = eval (Symbol s)
+printCombo (Boolean b) = printEval (Boolean b)
+printCombo (Constant n) = printEval (Constant n)
+printCombo (Symbol s) = printEval (Symbol s)
 printCombo (Combination (Symbol "quote" : y)) = "(" ++ quoteCombine y ++ ")"
     where
         quoteCombine [] = ""
@@ -223,13 +218,17 @@ printCombo (Combination (Symbol "quote" : y)) = "(" ++ quoteCombine y ++ ")"
 printCombo (Combination (Symbol "cons" : y)) =  "(" ++ consCombine y ++ ")"
     where
         consCombine [] = ""
-        consCombine [e] = eval e
-        consCombine (e1:e2) = eval e1 ++ " . " ++ consCombine e2
+        consCombine [e] = printEval e
+        consCombine (e1:e2) = printEval e1 ++ " . " ++ consCombine e2
 -- printCombo (x:xs) = eval x ++ " " ++ printCombo xs
 
-combinationEval :: [Expr] -> Expr -- currently doesn't report errors
-combinationEval [Combination x] = combinationEval x -- not tested
--- combinationEval (Combination x : [xs]) = combinationEval x ++ " " ++ eval xs -- does this even do anything
+eval :: Expr -> Expr
+eval (Boolean b) = Boolean b
+eval (Constant n) = Constant n
+eval (Symbol s) = Symbol s
+eval (Combination x) =  combinationEval x
+
+combinationEval :: [Expr] -> Expr -- currently doesn't report errors?
 combinationEval ((Symbol s) : xs)
     --intrinsics
     | s == "eq?" = equality xs
@@ -264,16 +263,12 @@ add, sub, mult, divide :: [Expr] -> Expr
 add [Constant e1, Constant e2] = Constant (e1 + e2)
 add [Combination x] = combinationEval [Combination x]
 add [Constant e1, Combination e2] = add [Constant e1, combinationEval [Combination e2]]
-add [Constant e1, Symbol "nil"] = Constant e1
-add [Symbol "nil", Constant e2] = Constant e2
 add [Combination e1, Constant e2] = add [combinationEval [Combination e1], Constant e2]
 add [Combination e1, Combination e2] = add [combinationEval [Combination e1], combinationEval [Combination e2]]
 
 sub [Constant e1, Constant e2] = Constant (e1 - e2)
 sub [Combination ((Symbol x):xs)] = sub xs
 sub [Constant e1, Combination e2] = sub [Constant e1, combinationEval [Combination e2]]
-sub [Constant e1, Symbol "nil"] = Constant e1
-sub [Symbol "nil", Constant e2] = Constant (-1 * e2)
 sub [Combination e1, Constant e2] = sub [combinationEval [Combination e1], Constant e2]
 sub [Combination e1, Combination e2] = sub [combinationEval [Combination e1], combinationEval [Combination e2]]
 
@@ -310,27 +305,10 @@ first [Combination x] = a x
         a [Constant e1, Constant e2] = Constant e1
         a [Symbol "quote", Combination y] = first [Combination y] -- cheating???
 
-
--- >>> runParser program "(add 1 (add 2 3))"
--- [([Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 2,Constant 3]]],"")]
-
--- >>> goEval "add 3 ( add 4)"
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(263,1)-(269,87): Non-exhaustive patterns in function add
-
-
 second [Combination x] = a x
     where
         a [Symbol "cons", Constant e1, Constant e2] = Constant e2
         a [Symbol "cons", Boolean e1, Boolean e2] = Boolean e2
-
--- >>> runParser program "(snd (cons 1 2))"
--- [([Combination [Symbol "snd",Combination [Symbol "cons",Constant 1,Constant 2]]],"")]
-
--- >>> combinationEval [Symbol "snd",Combination [Symbol "cons",Constant 1,Constant 2]]
--- Constant 2
-
--- >>> eval (Combination [Symbol "snd",Combination [Symbol "cons",Constant 1,Constant 2]])
--- "2"
 
 number [Constant e] = Boolean True
 number [Boolean e] = Boolean False
@@ -362,9 +340,17 @@ function [Combination e] = Boolean False
 
 quote :: [Expr] -> Expr -- currently doesn't evaluate levels
 quote [Constant x] = Combination [Symbol "quote", Constant x]
-quote (Constant x : xs) = Combination [Symbol "quote", Constant x, quote xs]
-quote [Symbol x] = Combination [Symbol x]
-quote (Symbol x : xs) = Combination [Symbol "quote", Symbol x, quote xs]
+quote [Symbol x] = Combination [Symbol "quote", Symbol x]
+ -- *quote (Constant x : xs) = Combination [Symbol "quote", Constant x] ++ (map multiquote xs)
+    where
+        multiquote :: Expr -> [Expr]
+        multiquote (Constant x) = [Constant x]
+        multiquote (Symbol x) = [Symbol x]
+quote (Symbol x : xs) = Combination [Symbol "quote", Symbol x, multiquote xs]
+    where
+        multiquote [Constant x] = Constant x
+        multiquote [Symbol x] = Symbol x
+-- quote (Symbol x : xs) = Combination [Symbol "quote", Symbol x, quote xs]
 quote [Combination xs] = quote xs
 
 splice :: [Expr] -> Expr -- currently doesn't evaluate levels
@@ -375,11 +361,17 @@ conditional :: [Expr] -> Expr
 conditional [Boolean True, x, y] = x
 conditional [Boolean False, x, y] = y
 
--- >>> runParser program "(if #t #t #f)"
--- [([Combination [Symbol "if",Boolean True,Boolean True,Boolean False]],"")]
+-- >>> runParser program "'(1 2 3)"
+-- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]],"")]
 
--- >>> conditional [Boolean True,Boolean True,Boolean False]
--- Boolean True
+-- >>> quote [Combination [Constant 1,Constant 2,Constant 3]]
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(354,9)-(355,40): Non-exhaustive patterns in function multiquote
+
+-- >>> combinationEval [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(354,9)-(355,40): Non-exhaustive patterns in function multiquote
+
+-- >>> printCombo (Combination [Symbol "quote",Constant 1,Combination [Symbol "quote",Constant 2,Combination [Symbol "quote",Constant 3]]])
+-- "(1 (2 (3)))"
 
 -- >>> runParser program "'(x $(add 2 3) y)"
 -- [([Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Symbol "y"]]],"")]
@@ -388,7 +380,7 @@ conditional [Boolean False, x, y] = y
 -- "5"
 
 -- >>> splice ([Constant 5])
--- "5"
+-- Combination [Symbol "splice",Constant 5]
 
 -- >>> splice ([Combination [Symbol "add",Constant 2,Constant 3]])
 -- "5"
