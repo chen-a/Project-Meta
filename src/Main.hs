@@ -215,15 +215,6 @@ printCombo (Combination (Symbol "quote" : y)) = "(" ++ quoteCombine y ++ ")"
         quoteCombine [] = ""
         quoteCombine [e] = printCombo e
         quoteCombine (e1:e2) = printCombo e1 ++ " " ++ quoteCombine e2
-printCombo (Combination (Symbol "cons" : y)) =  "(" ++ consCombine y ++ ")"
-    where
-        consCombine [] = ""
-        consCombine [e] = printEval e
-        -- consCombine [e1, Symbol "nil"] = printEval (Combination [e1])
-        -- consCombine [e1, Combination xs] = printEval e1 ++ " " consCombine xs
-        -- consCombine [e1, e2] = printEval e1 ++ " . " ++ printEval e2
-        consCombine (e1:e2) = printEval e1 ++ " . " ++ consCombine e2
-
 printCombo (Combination (Symbol "consNil" : y)) = "(" ++ consNil y ++ ")"
     where
         consNil [] = ""
@@ -291,23 +282,8 @@ sub [Combination e1, Combination e2] = sub [eval (Combination e1), eval (Combina
 mult [Constant e1, Constant e2] = Constant (e1 * e2)
 divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 
--- >>> runParser program "(cons (add 1 (add 3 (add 4 5))) (cons 1 (cons 3 (cons (add 2 (add 3 4)) nil))))"
--- [([Combination [Symbol "cons",Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]],"")]
-
--- >>> runParser program "(cons 1 (cons 3 (cons (add 2 (add 3 4)) nil)))"
--- [([Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]],"")]
-
--- >>> printEval (Combination [Symbol "cons",Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]])
--- Combination [Symbol "consNil",Constant 13,Constant 1,Constant 3,Constant 9]
-
--- >>> printEval (Combination [Symbol "consNil",Constant 13,Constant 1,Constant 3,Constant 9])
--- "(13 1 3 9)"
-
--- >>> cons [Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]
--- Combination [Symbol "consNil",Constant 13,Constant 1,Constant 3,Constant 9]
-
--- >>> combinationEval [Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]]]
--- Constant 9
+-- >>> runParser program "'(1 2 3)"
+-- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]],"")]
 
 -- >>> 
 
@@ -323,12 +299,6 @@ cons [Constant e1, Combination (Symbol "consNil": xs)] = Combination ([Symbol "c
 cons [Constant e1, Combination (Symbol "consPair": xs)] = Combination ([Symbol "consPair", Constant e1] ++ xs)
 cons [Constant e1, Combination (Symbol "cons" : xs)] = cons [Constant e1, cons xs]
 cons [Combination x, Combination y] = cons [eval (Combination x), eval (Combination y)]
-
-
-cons2 :: [Expr] -> Expr
-cons2 [x, Symbol "nil"] = Combination [x]
-cons2 [x, Combination xs] = Combination (x:xs)
-cons2 [x, y] = Combination [x, Symbol ".", y]
 
 -- >>> runParser program "'(1 2 3)"
 -- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]],"")]
