@@ -208,21 +208,24 @@ eval (Boolean b)
     | otherwise = "#f"
 eval (Constant n) = show n
 eval (Symbol s) = s
-eval (Combination x) = printCombo x
+eval (Combination x) =  printCombo (combinationEval x)
+ 
 
-printCombo :: [Expr] -> String
-printCombo [Boolean b] = eval (Boolean b)
-printCombo [Constant n] = eval (Constant n)
-printCombo [Symbol s] = eval (Symbol s)
-printCombo (Symbol "quote" : y) = "(" ++ printCombo y ++ ")"
-printCombo (Symbol "cons" : y) = consCombine y
+printCombo :: Expr -> String
+printCombo (Boolean b) = eval (Boolean b)
+printCombo (Constant n) = eval (Constant n)
+printCombo (Symbol s) = eval (Symbol s)
+printCombo (Combination (Symbol "quote" : y)) = "(" ++ quoteCombine y ++ ")"
+    where
+        quoteCombine [] = ""
+        quoteCombine [e] = printCombo e
+        quoteCombine (e1:e2) = printCombo e1 ++ " " ++ quoteCombine e2
+printCombo (Combination (Symbol "cons" : y)) = consCombine y
     where
         consCombine [] = ""
         consCombine [e] = eval e
         consCombine (e1:e2) = eval e1 ++ " . " ++ consCombine e2
-printCombo (x:xs) = eval x ++ " " ++ printCombo xs
-
-
+-- printCombo (x:xs) = eval x ++ " " ++ printCombo xs
 
 combinationEval :: [Expr] -> Expr -- currently doesn't report errors
 combinationEval [Combination x] = combinationEval x -- not tested
@@ -311,13 +314,22 @@ first [Combination x] = a x
 -- [([Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 2,Constant 3]]],"")]
 
 -- >>> goEval "add 3 ( add 4)"
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(247,1)-(250,75): Non-exhaustive patterns in function add
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(263,1)-(269,87): Non-exhaustive patterns in function add
 
 
 second [Combination x] = a x   
     where
         a [Symbol "cons", Constant e1, Constant e2] = Constant e2
         a [Symbol "cons", Boolean e1, Boolean e2] = Boolean e2
+
+-- >>> runParser program "(snd (cons 1 2))"
+-- [([Combination [Symbol "snd",Combination [Symbol "cons",Constant 1,Constant 2]]],"")]
+
+-- >>> combinationEval [Symbol "snd",Combination [Symbol "cons",Constant 1,Constant 2]]
+-- Constant 2
+
+-- >>> eval (Combination [Symbol "snd",Combination [Symbol "cons",Constant 1,Constant 2]])
+-- "2"
 
 number [Constant e] = Boolean True
 number [Boolean e] = Boolean False
