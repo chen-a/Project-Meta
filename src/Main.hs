@@ -8,6 +8,7 @@ import Bird.Printer
 import Data.List
 import Data.Char
 import Data.Bits (Bits(xor))
+import Control.Concurrent (yield)
 
 data Expr = Boolean Bool
     | Constant Int
@@ -207,49 +208,43 @@ eval (Boolean b)
     | otherwise = "#f"
 eval (Constant n) = show n
 eval (Symbol s) = s
-eval (Combination x) = printCombo (combinationEval x)
-
--- >>> runParser program "(snd (cons 1 2))"
--- [([Combination [Symbol "snd",Combination [Symbol "cons",Constant 1,Constant 2]]],"")]
-
--- >>> eval (Combination [Symbol "snd",Combination [Symbol "cons",Constant 1,Constant 2]])
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:218:1-50: Non-exhaustive patterns in function printCombo
-
--- >>> combinationEval [Symbol "snd",Combination [Symbol "cons",Constant 1,Constant 2]]
--- [Constant 2]
+eval (Combination x) = printCombo x
 
 printCombo :: [Expr] -> String
 printCombo [Boolean b] = eval (Boolean b)
 printCombo [Constant n] = eval (Constant n)
 printCombo [Symbol s] = eval (Symbol s)
+printCombo (Symbol "quote" : y) = "(" ++ printCombo y ++ ")"
+printCombo (Symbol "cons" : y) = consCombine y
+    where
+        consCombine [] = ""
+        consCombine [e] = eval e
+        consCombine (e1:e2) = eval e1 ++ " . " ++ consCombine e2
 printCombo (x:xs) = eval x ++ " " ++ printCombo xs
 
-combinationEval :: [Expr] -> [Expr] -- currently doesn't report errors
+
+
+combinationEval :: [Expr] -> Expr -- currently doesn't report errors
 combinationEval [Combination x] = combinationEval x -- not tested
 -- combinationEval (Combination x : [xs]) = combinationEval x ++ " " ++ eval xs -- does this even do anything
 combinationEval ((Symbol s) : xs)
     --intrinsics
-    | s == "eq?" = [equality xs]
-    | s == "add" = [add xs]
-    | s == "sub" = [sub xs]
-    | s == "mul" = [mult xs]
-    | s == "div" = [divide xs]
-    | s == "cons" = cons xs -- only apply "." if there is no nested list
-    | s == "fst" = [first xs]
-    | s == "snd" = [second xs]
-    | s == "number?" = [number xs]
-    | s == "pair?" = [pair xs]
-    | s == "list?" = [list xs]
-    | s == "function?" = [function xs]
+    | s == "eq?" = equality xs
+    | s == "add" = add xs
+    | s == "sub" = sub xs
+    | s == "mul" = mult xs
+    | s == "div" = divide xs
+    | s == "cons" = cons xs -- only apply "." if there is no nested list, returns Combination
+    | s == "fst" = first xs
+    | s == "snd" = second xs
+    | s == "number?" = number xs
+    | s == "pair?" = pair xs
+    | s == "list?" = list xs
+    | s == "function?" = function xs
     -- special forms
     | s == "quote" = quote xs
     | s == "splice" = splice xs
-    | s == "if" = [conditional xs]
-    where
-            addParens x = "(" ++ x ++ ")"
-            consCombine [] = ""
-            consCombine [e] = eval e
-            consCombine (e1:e2) = eval e1 ++ " . " ++ consCombine e2
+    | s == "if" = conditional xs
 
 equality :: [Expr] -> Expr
 equality [Constant e1, Constant e2]
@@ -263,7 +258,7 @@ equality [Combination (Symbol "add":xs), Constant e2] = equality [add xs, Consta
 
 add, sub, mult, divide :: [Expr] -> Expr
 add [Constant e1, Constant e2] = Constant (e1 + e2)
-add [Combination ((Symbol x):xs)] = add xs
+add [Combination x] = combinationEval [Combination x]
 add [Constant e1, Combination e2] = add [Constant e1, add [Combination e2]]
 add [Constant e1, Symbol "nil"] = Constant e1
 add [Symbol "nil", Constant e2] = Constant e2
@@ -290,18 +285,18 @@ divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 -- >>> eval (Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]]])
 -- "(1 . 2 . 3 . 4)"
 
-cons :: [Expr] -> [Expr] 
-cons [Constant e] = [Constant e]
-cons [Boolean e] = [Boolean e]
-cons [Constant e1, Constant e2] = [Constant e1, Constant e2]
-cons [Constant e1, Symbol "nil"] = [Constant e1]
-cons [Constant e1, Combination (Symbol "cons" : xs)] = Constant e1: cons xs
-cons [Combination (Symbol "cons" : xs), Constant e2] = cons xs ++ [Constant e2]
-cons [Symbol "nil", Constant e2] = [Constant e2]
-cons [Boolean e1, Boolean e2] = [Boolean e1, Boolean e2]
+cons :: [Expr] -> Expr
+cons [Constant e] = Constant e
+cons [Boolean e] = Boolean e
+cons [Constant e1, Constant e2] = Combination [Symbol "cons", Constant e1, Constant e2]
+cons [Constant e1, Symbol "nil"] = Constant e1
+cons [Constant e1, Combination (Symbol "cons" : xs)] = Combination [Symbol "cons", Constant e1, cons xs]
+cons [Combination (Symbol "cons" : xs), Constant e2] = Combination [Symbol "cons", cons xs, Constant e2]
+cons [Symbol "nil", Constant e2] = Constant e2
+cons [Boolean e1, Boolean e2] = Combination [Symbol "cons", Boolean e1, Boolean e2]
 cons [Combination (Symbol "add" : xs)] = cons [add xs]
 cons [Combination (Symbol "add" : xs), Symbol "nil"] = cons [add xs]
-cons [Combination (Symbol "add" : xs), Combination (Symbol "cons" : ys)] = cons [add xs] ++ cons ys
+cons [Combination (Symbol "add" : xs), Combination (Symbol "cons" : ys)] = Combination [Symbol "cons", cons [add xs], cons ys]
 
 first, second, number :: [Expr] -> Expr
 first [Combination x] = a x
@@ -352,15 +347,15 @@ function [Constant e] = Boolean False
 function [Boolean e] = Boolean False 
 function [Combination e] = Boolean False
 
-quote :: [Expr] -> [Expr] -- currently doesn't evaluate levels
-quote [Constant x] = [Constant x]
-quote (Constant x : xs) = Constant x : quote xs
-quote [Symbol x] = [Symbol x]
-quote (Symbol x : xs) = Symbol x : quote xs
+quote :: [Expr] -> Expr -- currently doesn't evaluate levels
+quote [Constant x] = Combination [Symbol "quote", Constant x]
+quote (Constant x : xs) = Combination [Symbol "quote", Constant x, quote xs]
+quote [Symbol x] = Combination [Symbol x]
+quote (Symbol x : xs) = Combination [Symbol "quote", Symbol x, quote xs]
 quote [Combination xs] = quote xs
 
-splice :: [Expr] -> [Expr] -- currently doesn't evaluate levels
-splice [Constant x] = [Constant x]
+splice :: [Expr] -> Expr -- currently doesn't evaluate levels
+splice [Constant x] = Combination [Symbol "splice", Constant x]
 splice [Combination xs] = combinationEval xs
 
 conditional :: [Expr] -> Expr 
