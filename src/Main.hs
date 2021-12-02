@@ -244,6 +244,7 @@ eval (Symbol s) = Symbol s
 eval (Combination x) =  combinationEval x
 
 combinationEval :: [Expr] -> Expr -- currently doesn't report errors?
+combinationEval [Combination x] = combinationEval x
 combinationEval ((Symbol s) : xs)
     --intrinsics
     | s == "eq?" = equality xs
@@ -293,23 +294,29 @@ divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 -- >>> runParser program "(cons (add 1 (add 3 (add 4 5))) (cons 1 (cons 3 (cons (add 2 (add 3 4)) nil))))"
 -- [([Combination [Symbol "cons",Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]],"")]
 
--- >>> runParser program "(cons (add 2 (add 3 4)) nil)"
--- [([Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]],"")]
+-- >>> runParser program "(cons 1 (cons 3 (cons (add 2 (add 3 4)) nil)))"
+-- [([Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]],"")]
 
--- >>> eval (Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"])
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(313,1)-(319,87): Non-exhaustive patterns in function cons
+-- >>> printEval (Combination [Symbol "cons",Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]])
+-- Combination [Symbol "consNil",Constant 13,Constant 1,Constant 3,Constant 9]
+
+-- >>> printEval (Combination [Symbol "consNil",Constant 13,Constant 1,Constant 3,Constant 9])
+-- "(13 1 3 9)"
+
+-- >>> cons [Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]
+-- Combination [Symbol "consNil",Constant 13,Constant 1,Constant 3,Constant 9]
 
 -- >>> combinationEval [Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]]]
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(248,1)-(265,32): Non-exhaustive patterns in function combinationEval
+-- Constant 9
+
+-- >>> 
 
 -- >>> eval (Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]])
 -- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(313,1)-(319,87): Non-exhaustive patterns in function cons
 
--- >>> printEval (eval (Combination [Symbol "cons",Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]))
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(313,1)-(319,87): Non-exhaustive patterns in function cons
-
 cons :: [Expr] -> Expr
 cons [Constant e, Symbol "nil"] = Combination [Symbol "consNil", Constant e]
+cons [Combination e, Symbol "nil"] = Combination [Symbol "consNil", eval (Combination e)]
 cons [Constant e1, Constant e2] = Combination [Symbol "consPair", Constant e1, Constant e2]
 cons [Boolean e1, Boolean e2] = Combination [Symbol "consPair", Boolean e1, Boolean e2]
 cons [Constant e1, Combination (Symbol "consNil": xs)] = Combination ([Symbol "consNil", Constant e1] ++ xs)
