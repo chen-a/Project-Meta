@@ -190,7 +190,7 @@ goEval s  = do
      let result = parseMeta s
      case result of
         Left metaAST -> mapM_ putStrLn (map eval metaAST)
-        Right err -> putStrLn ("error: " ++ err) 
+        Right err -> putStrLn ("error: " ++ err)
 
         {-do
      let parseResult = parseMeta s
@@ -209,7 +209,7 @@ eval (Boolean b)
 eval (Constant n) = show n
 eval (Symbol s) = s
 eval (Combination x) =  printCombo (combinationEval x)
- 
+
 
 printCombo :: Expr -> String
 printCombo (Boolean b) = eval (Boolean b)
@@ -220,7 +220,7 @@ printCombo (Combination (Symbol "quote" : y)) = "(" ++ quoteCombine y ++ ")"
         quoteCombine [] = ""
         quoteCombine [e] = printCombo e
         quoteCombine (e1:e2) = printCombo e1 ++ " " ++ quoteCombine e2
-printCombo (Combination (Symbol "cons" : y)) = consCombine y
+printCombo (Combination (Symbol "cons" : y)) =  "(" ++ consCombine y ++ ")"
     where
         consCombine [] = ""
         consCombine [e] = eval e
@@ -260,21 +260,22 @@ equality [Constant e1, Combination (Symbol "add":xs)] = equality [Constant e1, a
 equality [Combination (Symbol "add":xs), Constant e2] = equality [add xs, Constant e2]
 
 add, sub, mult, divide :: [Expr] -> Expr
+
 add [Constant e1, Constant e2] = Constant (e1 + e2)
 add [Combination x] = combinationEval [Combination x]
-add [Constant e1, Combination e2] = add [Constant e1, add [Combination e2]]
+add [Constant e1, Combination e2] = add [Constant e1, combinationEval [Combination e2]]
 add [Constant e1, Symbol "nil"] = Constant e1
 add [Symbol "nil", Constant e2] = Constant e2
-add [Combination e1, Constant e2] = add [add [Combination e1], Constant e2]
-add [Combination e1, Combination e2] = add [add [Combination e1], add [Combination e2]]
+add [Combination e1, Constant e2] = add [combinationEval [Combination e1], Constant e2]
+add [Combination e1, Combination e2] = add [combinationEval [Combination e1], combinationEval [Combination e2]]
 
 sub [Constant e1, Constant e2] = Constant (e1 - e2)
 sub [Combination ((Symbol x):xs)] = sub xs
-sub [Constant e1, Combination e2] = sub [Constant e1, add [Combination e2]]
+sub [Constant e1, Combination e2] = sub [Constant e1, combinationEval [Combination e2]]
 sub [Constant e1, Symbol "nil"] = Constant e1
 sub [Symbol "nil", Constant e2] = Constant (-1 * e2)
-sub [Combination e1, Constant e2] = sub [sub [Combination e1], Constant e2]
-sub [Combination e1, Combination e2] = sub [sub [Combination e1], sub [Combination e2]]
+sub [Combination e1, Constant e2] = sub [combinationEval [Combination e1], Constant e2]
+sub [Combination e1, Combination e2] = sub [combinationEval [Combination e1], combinationEval [Combination e2]]
 
 mult [Constant e1, Constant e2] = Constant (e1 * e2)
 divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
@@ -308,7 +309,7 @@ first [Combination x] = a x
         a [Symbol "cons", Boolean e1, Boolean e2] =  Boolean e1
         a [Constant e1, Constant e2] = Constant e1
         a [Symbol "quote", Combination y] = first [Combination y] -- cheating???
-       
+
 
 -- >>> runParser program "(add 1 (add 2 3))"
 -- [([Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 2,Constant 3]]],"")]
@@ -317,7 +318,7 @@ first [Combination x] = a x
 -- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(263,1)-(269,87): Non-exhaustive patterns in function add
 
 
-second [Combination x] = a x   
+second [Combination x] = a x
     where
         a [Symbol "cons", Constant e1, Constant e2] = Constant e2
         a [Symbol "cons", Boolean e1, Boolean e2] = Boolean e2
@@ -337,26 +338,26 @@ number [Symbol e] = Boolean False
 number [Combination e] = Boolean False
 
 pair :: [Expr] -> Expr
-pair [Constant e] = Boolean False 
+pair [Constant e] = Boolean False
 pair [Boolean e] = Boolean False
-pair [Constant e1, Constant e2] = Boolean True 
+pair [Constant e1, Constant e2] = Boolean True
 pair [Boolean e1, Boolean e2] = Boolean True
 pair [Combination x] = pair x
 pair (Symbol x : ys) = pair ys
 
 list :: [Expr] -> Expr
-list [Constant e] = Boolean False 
-list [Boolean e] = Boolean False 
-list [Symbol e] = Boolean False 
+list [Constant e] = Boolean False
+list [Boolean e] = Boolean False
+list [Symbol e] = Boolean False
 list (x:xs) = Boolean True
 
 function :: [Expr] -> Expr
-function [Symbol e] = if e `elem` flist 
-    then Boolean True 
+function [Symbol e] = if e `elem` flist
+    then Boolean True
     else Boolean False
         where flist = ["eq?", "add", "sub", "mul", "div", "cons", "fst", "snd", "number?", "pair?", "list?", "function?"]
-function [Constant e] = Boolean False 
-function [Boolean e] = Boolean False 
+function [Constant e] = Boolean False
+function [Boolean e] = Boolean False
 function [Combination e] = Boolean False
 
 quote :: [Expr] -> Expr -- currently doesn't evaluate levels
@@ -370,7 +371,7 @@ splice :: [Expr] -> Expr -- currently doesn't evaluate levels
 splice [Constant x] = Combination [Symbol "splice", Constant x]
 splice [Combination xs] = combinationEval xs
 
-conditional :: [Expr] -> Expr 
+conditional :: [Expr] -> Expr
 conditional [Boolean True, x, y] = x
 conditional [Boolean False, x, y] = y
 
