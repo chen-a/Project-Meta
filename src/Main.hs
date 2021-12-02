@@ -219,6 +219,9 @@ printCombo (Combination (Symbol "cons" : y)) =  "(" ++ consCombine y ++ ")"
     where
         consCombine [] = ""
         consCombine [e] = printEval e
+        -- consCombine [e1, Symbol "nil"] = printEval (Combination [e1])
+        -- consCombine [e1, Combination xs] = printEval e1 ++ " " consCombine xs
+        -- consCombine [e1, e2] = printEval e1 ++ " . " ++ printEval e2
         consCombine (e1:e2) = printEval e1 ++ " . " ++ consCombine e2
 -- printCombo (x:xs) = eval x ++ " " ++ printCombo xs
 
@@ -261,16 +264,17 @@ equality [Combination (Symbol "add":xs), Constant e2] = equality [add xs, Consta
 add, sub, mult, divide :: [Expr] -> Expr
 
 add [Constant e1, Constant e2] = Constant (e1 + e2)
-add [Combination x] = combinationEval [Combination x]
-add [Constant e1, Combination e2] = add [Constant e1, combinationEval [Combination e2]]
-add [Combination e1, Constant e2] = add [combinationEval [Combination e1], Constant e2]
-add [Combination e1, Combination e2] = add [combinationEval [Combination e1], combinationEval [Combination e2]]
+add [Combination x] = eval (Combination x)
+add [Constant e1, Combination e2] = add [Constant e1, eval (Combination e2)]
+add [Combination e1, Constant e2] = add [eval (Combination e1), Constant e2]
+add [Combination e1, Combination e2] = add [eval (Combination e1), eval (Combination e2)]
+
 
 sub [Constant e1, Constant e2] = Constant (e1 - e2)
 sub [Combination ((Symbol x):xs)] = sub xs
-sub [Constant e1, Combination e2] = sub [Constant e1, combinationEval [Combination e2]]
-sub [Combination e1, Constant e2] = sub [combinationEval [Combination e1], Constant e2]
-sub [Combination e1, Combination e2] = sub [combinationEval [Combination e1], combinationEval [Combination e2]]
+sub [Constant e1, Combination e2] = sub [Constant e1, eval (Combination e2)]
+sub [Combination e1, Constant e2] = sub [eval (Combination e1), Constant e2]
+sub [Combination e1, Combination e2] = sub [eval (Combination e1), eval (Combination e2)]
 
 mult [Constant e1, Constant e2] = Constant (e1 * e2)
 divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
@@ -282,7 +286,7 @@ divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 -- Constant 11
 
 -- >>> eval (Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]]])
--- "(1 . 2 . 3 . 4)"
+-- Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Constant 4]]]
 
 cons :: [Expr] -> Expr
 cons [Constant e] = Constant e
@@ -293,9 +297,19 @@ cons [Constant e1, Combination (Symbol "cons" : xs)] = Combination [Symbol "cons
 cons [Combination (Symbol "cons" : xs), Constant e2] = Combination [Symbol "cons", cons xs, Constant e2]
 cons [Symbol "nil", Constant e2] = Constant e2
 cons [Boolean e1, Boolean e2] = Combination [Symbol "cons", Boolean e1, Boolean e2]
-cons [Combination (Symbol "add" : xs)] = cons [add xs]
+cons [Combination x] = cons [eval (Combination x)]
 cons [Combination (Symbol "add" : xs), Symbol "nil"] = cons [add xs]
-cons [Combination (Symbol "add" : xs), Combination (Symbol "cons" : ys)] = Combination [Symbol "cons", cons [add xs], cons ys]
+cons [Combination x, Combination y] = Combination [Symbol "cons", eval (Combination x), eval (Combination y)]
+
+cons2 :: [Expr] -> Expr
+cons2 [x, Symbol "nil"] = Combination [x]
+cons2 [x, Combination xs] = Combination (x:xs)
+cons2 [x, y] = Combination [x, Symbol ".", y]
+
+-- >>> cons2 [Constant 1, Constant 2]
+-- Combination [Constant 1,Symbol ".",Constant 2]
+-- 
+
 
 first, second, number :: [Expr] -> Expr
 first [Combination x] = a x
@@ -341,11 +355,11 @@ function [Combination e] = Boolean False
 quote :: [Expr] -> Expr -- currently doesn't evaluate levels
 quote [Constant x] = Combination [Symbol "quote", Constant x]
 quote [Symbol x] = Combination [Symbol "quote", Symbol x]
- -- *quote (Constant x : xs) = Combination [Symbol "quote", Constant x] ++ (map multiquote xs)
+quote (Constant x : xs) = Combination (map multiquote xs)
     where
-        multiquote :: Expr -> [Expr]
-        multiquote (Constant x) = [Constant x]
-        multiquote (Symbol x) = [Symbol x]
+        multiquote :: Expr -> Expr
+        multiquote (Constant x) = Constant x
+        multiquote (Symbol x) = Symbol x
 quote (Symbol x : xs) = Combination [Symbol "quote", Symbol x, multiquote xs]
     where
         multiquote [Constant x] = Constant x
@@ -377,13 +391,14 @@ conditional [Boolean False, x, y] = y
 -- [([Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Symbol "y"]]],"")]
 
 -- >>> combinationEval [Symbol "add",Constant 2,Constant 3]
--- "5"
+-- Constant 5
 
 -- >>> splice ([Constant 5])
 -- Combination [Symbol "splice",Constant 5]
 
 -- >>> splice ([Combination [Symbol "add",Constant 2,Constant 3]])
--- "5"
+-- Constant 5
+-- 
 
 
 -- stuff that might help with library------------------
