@@ -241,7 +241,6 @@ eval :: Expr -> Expr
 eval (Boolean b) = Boolean b
 eval (Constant n) = Constant n
 eval (Symbol s) = Symbol s
-eval (Combination [Symbol x, Combination y]) = eval (Combination [Symbol x, eval (Combination y)])
 eval (Combination x) =  combinationEval x
 
 combinationEval :: [Expr] -> Expr -- currently doesn't report errors?
