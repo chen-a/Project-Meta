@@ -282,14 +282,6 @@ sub [Combination e1, Combination e2] = sub [eval (Combination e1), eval (Combina
 mult [Constant e1, Constant e2] = Constant (e1 * e2)
 divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 
--- >>> runParser program "'(1 2 3)"
--- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]],"")]
-
--- >>> 
-
--- >>> eval (Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]])
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(313,1)-(319,87): Non-exhaustive patterns in function cons
-
 cons :: [Expr] -> Expr
 cons [Constant e, Symbol "nil"] = Combination [Symbol "consNil", Constant e]
 cons [Combination e, Symbol "nil"] = Combination [Symbol "consNil", eval (Combination e)]
@@ -300,26 +292,18 @@ cons [Constant e1, Combination (Symbol "consPair": xs)] = Combination ([Symbol "
 cons [Constant e1, Combination (Symbol "cons" : xs)] = cons [Constant e1, cons xs]
 cons [Combination x, Combination y] = cons [eval (Combination x), eval (Combination y)]
 
--- >>> runParser program "'(1 2 3)"
--- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]],"")]
-
--- >>> cons2 [Constant 1, Constant 2]
--- Combination [Constant 1,Symbol ".",Constant 2]
--- 
-
 
 first, second, number :: [Expr] -> Expr
 first [Combination x] = a x
     where
-        a [Symbol "cons", Constant e1, Constant e2] = Constant e1
-        a [Symbol "cons", Boolean e1, Boolean e2] =  Boolean e1
+        a [Symbol "cons", e1, e2] = e1
         a [Constant e1, Constant e2] = Constant e1
-        a [Symbol "quote", Combination y] = first [Combination y] -- cheating???
+        a [Symbol "quote", Combination y] = first [Combination y]
 
 second [Combination x] = a x
     where
-        a [Symbol "cons", Constant e1, Constant e2] = Constant e2
-        a [Symbol "cons", Boolean e1, Boolean e2] = Boolean e2
+        a [Symbol "cons", e1, e2] = e2
+        a [Boolean e1, Boolean e2] = Boolean e2
 
 number [Constant e] = Boolean True
 number [Boolean e] = Boolean False
@@ -352,7 +336,7 @@ function [Combination e] = Boolean False
 quote :: [Expr] -> Expr -- currently doesn't evaluate levels
 quote [Constant x] = Combination [Symbol "quote", Constant x]
 quote [Symbol x] = Combination [Symbol "quote", Symbol x]
-quote (Constant x : xs) = Combination (map multiquote xs)
+quote (Constant x : xs) = Combination (Constant x : map multiquote xs)
     where
         multiquote :: Expr -> Expr
         multiquote (Constant x) = Constant x
@@ -372,31 +356,17 @@ conditional :: [Expr] -> Expr
 conditional [Boolean True, x, y] = x
 conditional [Boolean False, x, y] = y
 
--- >>> runParser program "'(1 2 3)"
--- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]],"")]
+-- >>> runParser program "'(x y . z)"
+-- [([Combination [Symbol "quote",Combination [Symbol "x",Symbol "y",Symbol ".",Symbol "z"]]],"")]
 
--- >>> quote [Combination [Constant 1,Constant 2,Constant 3]]
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(354,9)-(355,40): Non-exhaustive patterns in function multiquote
+-- >>> quote [Combination [Symbol "x",Symbol "y",Symbol ".",Symbol "z"]]
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(347,9)-(348,40): Non-exhaustive patterns in function multiquote
 
--- >>> combinationEval [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]]
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(354,9)-(355,40): Non-exhaustive patterns in function multiquote
+-- >>> runParser program "(cons 1 (cons 2 nil))"
+-- [([Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Symbol "nil"]]],"")]
 
--- >>> printCombo (Combination [Symbol "quote",Constant 1,Combination [Symbol "quote",Constant 2,Combination [Symbol "quote",Constant 3]]])
--- "(1 (2 (3)))"
-
--- >>> runParser program "'(x $(add 2 3) y)"
--- [([Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Symbol "y"]]],"")]
-
--- >>> combinationEval [Symbol "add",Constant 2,Constant 3]
--- Constant 5
-
--- >>> splice ([Constant 5])
--- Combination [Symbol "splice",Constant 5]
-
--- >>> splice ([Combination [Symbol "add",Constant 2,Constant 3]])
--- Constant 5
--- 
-
+-- >>> second [Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Symbol "nil"]]]
+-- Combination [Symbol "cons",Constant 2,Symbol "nil"]
 
 -- stuff that might help with library------------------
 -- add [] = 0
