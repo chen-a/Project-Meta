@@ -14,6 +14,7 @@ data Expr = Boolean Bool
     | Constant Int
     | Symbol String
     | Combination [Expr]
+    | Dot [Expr] Expr
     deriving Show
 
 
@@ -168,13 +169,45 @@ goEval s  = do
         Left metaAST -> mapM_ putStrLn (map printEval (map eval metaAST))
         Right err -> putStrLn ("error: " ++ err)
 
+
+newtype Environment = Env [(String, Expr)] deriving Show
+
+envLookup :: Environment -> String -> Maybe Expr
+envLookup (Env []) s = Nothing
+envLookup (Env ((vname,value) : rest)) s = 
+    if vname == s then Just value 
+                  else envLookup (Env rest) s
+
+envAdd :: Environment -> (String, Expr) -> Environment
+envAdd (Env ps) p = Env (p : ps) 
+
+test_env1, test_env2 :: Environment
+test_env1 = Env [("v2", Constant 88), ("v2", Constant 23), ("v1", Constant 10)]
+test_env2 = Env [("v2", Constant 8888), ("v2", Constant 23), ("v1", Constant 10)]
+
+-- >>> envLookup test_env1 "v2"
+-- Just (Constant 8888)
+
+-- Error Statement
+errUndefVar :: String -> String 
+errUndefVar s = "undefined variable: '" ++ s ++ "'"
+
 printEval :: Expr -> String 
 printEval (Boolean b)
     | b = "#t"
     | otherwise = "#f"
 printEval (Constant n) = show n
 printEval (Symbol s) = s
-printEval (Combination x) = printCombo (Combination x) 
+printEval (Combination xs) = "(" ++ printCombine xs ++ ")"
+    where
+        printCombine [] = ""
+        printCombine [e] = printEval e
+        printCombine (e:es) = printEval e ++ " " ++ printCombine es 
+printEval (Dot xs x) = "(" ++ printCombine xs ++ " . " ++ printEval x ++ ")"
+     where
+        printCombine [] = ""
+        printCombine [e] = printEval e
+        printCombine (e:es) = printEval e ++ " " ++ printCombine es 
 
 printCombo :: Expr -> String
 printCombo (Boolean b) = printEval (Boolean b)
@@ -210,7 +243,7 @@ combinationEval ((Symbol s) : xs)
     | s == "sub" = sub xs
     | s == "mul" = mult xs
     | s == "div" = divide xs
-    | s == "cons" = cons xs 
+    | s == "cons" = cons2 xs 
     | s == "fst" = first xs
     | s == "snd" = second xs
     | s == "number?" = number xs
@@ -218,8 +251,8 @@ combinationEval ((Symbol s) : xs)
     | s == "list?" = list xs
     | s == "function?" = function xs
     -- special forms
-    | s == "quote" = quote xs
-    | s == "splice" = splice xs
+    | s == "quote" = quote2 xs
+    | s == "splice" = splice2 xs
     | s == "if" = conditional xs
 
 equality :: [Expr] -> Expr
@@ -238,6 +271,7 @@ add [Constant e1, Combination e2] = add [Constant e1, eval (Combination e2)]
 add [Combination e1, Constant e2] = add [eval (Combination e1), Constant e2]
 add [Combination e1, Combination e2] = add [eval (Combination e1), eval (Combination e2)]
 add [Combination x] = eval (Combination x)
+-- add [Symbol x, Symbol y] = add (lookup x) (lookup y)
 
 
 sub [Constant e1, Constant e2] = Constant (e1 - e2)
@@ -258,6 +292,13 @@ cons [Constant e1, Combination (Symbol "consNil": xs)] = Combination ([Symbol "c
 cons [Constant e1, Combination (Symbol "consPair": xs)] = Combination ([Symbol "consPair", Constant e1] ++ xs)
 cons [Constant e1, Combination (Symbol "cons" : xs)] = cons [Constant e1, cons xs]
 cons [Combination x, Combination y] = cons [eval (Combination x), eval (Combination y)]
+
+cons2 :: [Expr] -> Expr
+cons2 [x, Symbol "nil"] = Combination [x]
+cons2 [x, Combination xs] = Combination (x:xs)
+cons2 [x, Dot ys y] = Dot (x:ys) y 
+cons2 [x, y] = Dot [x] y
+cons2 _ = Symbol "Error"
 
 
 first, second, number :: [Expr] -> Expr
@@ -315,13 +356,36 @@ quote (Symbol x : xs) = Combination (Symbol "quote" : Symbol x :  map multiquote
         multiquote (Symbol x) = Symbol x
 quote [Combination xs] = quote xs
 
+-- quote [Constant 1, Constant 2]
+-- Combination [Symbol "quote", Constant 1, Combination [Symbol "quote", Constant 2]]
+
+quote2 :: [Expr] -> Expr 
+quote2 [Constant x] = Constant x
+quote2 [Symbol s] = Symbol s
+quote2 [Combination xs] = Combination xs
+quote2 [Dot xs x] = Dot xs x
+
+-- >>> quote2 [Combination [Constant 1, Constant 2]]
+-- Combination [Symbol "quote",Combination [Constant 1,Constant 2]]
+
 splice :: [Expr] -> Expr -- currently doesn't evaluate levels
 splice [Constant x] = Combination [Symbol "splice", Constant x]
 splice [Combination xs] = combinationEval xs
 
+splice2 :: [Expr] -> Expr 
+splice2 [Constant x] = Constant x
+splice2 [Symbol s] = Symbol s
+splice2 [Combination xs] = combinationEval xs
+
 conditional :: [Expr] -> Expr
 conditional [Boolean True, x, y] = x
 conditional [Boolean False, x, y] = y
+
+-- >>> runParser program "'(1 2 $3)"
+-- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Combination [Symbol "splice",Constant 3]]]],"")]
+
+-- >>> quote [Combination [Constant 1,Constant 2,Combination [Symbol "splice",Constant 3]]]
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(309,9)-(310,40): Non-exhaustive patterns in function multiquote
 
 -- >>> runParser program "'(x y . z)"
 -- [([Combination [Symbol "quote",Combination [Symbol "x",Symbol "y",Symbol ".",Symbol "z"]]],"")]
