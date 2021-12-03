@@ -243,7 +243,7 @@ combinationEval ((Symbol s) : xs)
     | s == "sub" = sub xs
     | s == "mul" = mult xs
     | s == "div" = divide xs
-    | s == "cons" = cons2 xs 
+    | s == "cons" = cons xs 
     | s == "fst" = first xs
     | s == "snd" = second xs
     | s == "number?" = number xs
@@ -251,8 +251,8 @@ combinationEval ((Symbol s) : xs)
     | s == "list?" = list xs
     | s == "function?" = function xs
     -- special forms
-    | s == "quote" = quote2 xs
-    | s == "splice" = splice2 xs
+    | s == "quote" = quote xs
+    | s == "splice" = splice xs
     | s == "if" = conditional xs
 
 equality :: [Expr] -> Expr
@@ -283,23 +283,37 @@ sub [Combination e1, Combination e2] = sub [eval (Combination e1), eval (Combina
 mult [Constant e1, Constant e2] = Constant (e1 * e2)
 divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 
-cons :: [Expr] -> Expr
-cons [Constant e, Symbol "nil"] = Combination [Symbol "consNil", Constant e]
+{-- cons [Constant e, Symbol "nil"] = Combination [Symbol "consNil", Constant e]
 cons [Combination e, Symbol "nil"] = Combination [Symbol "consNil", eval (Combination e)]
 cons [Constant e1, Constant e2] = Combination [Symbol "consPair", Constant e1, Constant e2]
 cons [Boolean e1, Boolean e2] = Combination [Symbol "consPair", Boolean e1, Boolean e2]
 cons [Constant e1, Combination (Symbol "consNil": xs)] = Combination ([Symbol "consNil", Constant e1] ++ xs)
 cons [Constant e1, Combination (Symbol "consPair": xs)] = Combination ([Symbol "consPair", Constant e1] ++ xs)
 cons [Constant e1, Combination (Symbol "cons" : xs)] = cons [Constant e1, cons xs]
-cons [Combination x, Combination y] = cons [eval (Combination x), eval (Combination y)]
+cons [Combination x, Combination y] = cons [eval (Combination x), eval (Combination y)] --}
 
-cons2 :: [Expr] -> Expr
-cons2 [x, Symbol "nil"] = Combination [x]
-cons2 [x, Combination xs] = Combination (x:xs)
-cons2 [x, Dot ys y] = Dot (x:ys) y 
-cons2 [x, y] = Dot [x] y
-cons2 _ = Symbol "Error"
+cons :: [Expr] -> Expr
+cons [x, Symbol "nil"] = Combination [x]
+cons [x, Combination (Symbol "cons" : xs)] = cons [x, cons xs]
+cons [x, Combination xs] = Combination (x:xs)
+cons [x, Dot ys y] = Dot (x:ys) y 
+cons [x, y] = Dot [x] y
+cons _ = Symbol "Error"
 
+-- >>> cons [Constant 2, Combination [Symbol "cons", Constant 3, Combination [Symbol "cons", Constant 4, Symbol "nil"]]]
+-- Combination [Constant 2,Constant 3,Constant 4]
+
+-- >>> eval Combination[]
+
+
+-- >>> runParser program "(cons 1 (cons 2 (cons 3 (cons 4 nil))))"
+-- [([Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]]]],"")]
+
+-- >>> cons [Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]]]
+-- Combination [Constant 1,Combination [Constant 2,Combination [Constant 3,Combination [Constant 4]]]]
+
+-- >>> printEval (Combination [Constant 1,Combination [Constant 2,Combination [Constant 3,Combination [Constant 4]]]])
+-- "(1 (2 (3 (4))))"
 
 first, second, number :: [Expr] -> Expr
 first [Combination x] = a x
@@ -341,41 +355,22 @@ function [Constant e] = Boolean False
 function [Boolean e] = Boolean False
 function [Combination e] = Boolean False
 
-quote :: [Expr] -> Expr -- currently doesn't evaluate levels
-quote [Constant x] = Combination [Symbol "quote", Constant x]
-quote [Symbol x] = Combination [Symbol "quote", Symbol x]
-quote (Constant x : xs) = Combination (Symbol "quote" : Constant x : map multiquote xs)
-    where
-        multiquote :: Expr -> Expr
-        multiquote (Constant x) = Constant x
-        multiquote (Symbol x) = Symbol x
-quote (Symbol x : xs) = Combination (Symbol "quote" : Symbol x :  map multiquote xs)
-    where
-        multiquote :: Expr -> Expr
-        multiquote (Constant x) = Constant x
-        multiquote (Symbol x) = Symbol x
-quote [Combination xs] = quote xs
-
 -- quote [Constant 1, Constant 2]
 -- Combination [Symbol "quote", Constant 1, Combination [Symbol "quote", Constant 2]]
 
-quote2 :: [Expr] -> Expr 
-quote2 [Constant x] = Constant x
-quote2 [Symbol s] = Symbol s
-quote2 [Combination xs] = Combination xs
-quote2 [Dot xs x] = Dot xs x
+quote :: [Expr] -> Expr 
+quote [Constant x] = Constant x
+quote [Symbol s] = Symbol s
+quote [Combination xs] = Combination xs
+quote [Dot xs x] = Dot xs x
 
--- >>> quote2 [Combination [Constant 1, Constant 2]]
+-- >>> quote [Combination [Constant 1, Constant 2]]
 -- Combination [Symbol "quote",Combination [Constant 1,Constant 2]]
 
-splice :: [Expr] -> Expr -- currently doesn't evaluate levels
-splice [Constant x] = Combination [Symbol "splice", Constant x]
+splice :: [Expr] -> Expr 
+splice [Constant x] = Constant x
+splice [Symbol s] = Symbol s
 splice [Combination xs] = combinationEval xs
-
-splice2 :: [Expr] -> Expr 
-splice2 [Constant x] = Constant x
-splice2 [Symbol s] = Symbol s
-splice2 [Combination xs] = combinationEval xs
 
 conditional :: [Expr] -> Expr
 conditional [Boolean True, x, y] = x
