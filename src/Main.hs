@@ -235,6 +235,7 @@ eval (Symbol s) = Symbol s
 eval (Combination x) =  combinationEval x
 
 combinationEval :: [Expr] -> Expr -- currently doesn't report errors?
+combinationEval [Constant x] = Constant x
 combinationEval [Combination x] = combinationEval x
 combinationEval ((Symbol s) : xs)
     --intrinsics
@@ -283,27 +284,64 @@ sub [Combination e1, Combination e2] = sub [eval (Combination e1), eval (Combina
 mult [Constant e1, Constant e2] = Constant (e1 * e2)
 divide [Constant e1, Constant e2] = Constant (e1 `div` e2)
 
-{-- cons [Constant e, Symbol "nil"] = Combination [Symbol "consNil", Constant e]
-cons [Combination e, Symbol "nil"] = Combination [Symbol "consNil", eval (Combination e)]
-cons [Constant e1, Constant e2] = Combination [Symbol "consPair", Constant e1, Constant e2]
-cons [Boolean e1, Boolean e2] = Combination [Symbol "consPair", Boolean e1, Boolean e2]
-cons [Constant e1, Combination (Symbol "consNil": xs)] = Combination ([Symbol "consNil", Constant e1] ++ xs)
-cons [Constant e1, Combination (Symbol "consPair": xs)] = Combination ([Symbol "consPair", Constant e1] ++ xs)
-cons [Constant e1, Combination (Symbol "cons" : xs)] = cons [Constant e1, cons xs]
-cons [Combination x, Combination y] = cons [eval (Combination x), eval (Combination y)] --}
+cons2 [Constant e, Symbol "nil"] = Combination [Symbol "consNil", Constant e]
+cons2 [Combination e, Symbol "nil"] = Combination [Symbol "consNil", eval (Combination e)]
+cons2 [Constant e1, Constant e2] = Combination [Symbol "consPair", Constant e1, Constant e2]
+cons2 [Boolean e1, Boolean e2] = Combination [Symbol "consPair", Boolean e1, Boolean e2]
+cons2 [Constant e1, Combination (Symbol "consNil": xs)] = Combination ([Symbol "consNil", Constant e1] ++ xs)
+cons2 [Constant e1, Combination (Symbol "consPair": xs)] = Combination ([Symbol "consPair", Constant e1] ++ xs)
+cons2 [Constant e1, Combination (Symbol "cons" : xs)] = cons [Constant e1, cons xs]
+cons2 [Combination x, Combination y] = cons [eval (Combination x), eval (Combination y)]
 
 cons :: [Expr] -> Expr
-cons [x, Symbol "nil"] = Combination [x]
-cons [x, Combination (Symbol "cons" : xs)] = cons [x, cons xs]
-cons [x, Combination xs] = Combination (x:xs)
+cons [x, Symbol "nil"] = Combination [eval x]
+cons [x, Combination (Symbol "cons" : xs)] = cons [eval x, eval(Combination xs)]
+cons [x, Combination (Symbol e: xs)] = Combination [eval x, eval (Combination (Symbol e:xs))] -- changed
+cons [x, Combination [xs]] = Combination [x, xs] -- added
 cons [x, Dot ys y] = Dot (x:ys) y 
 cons [x, y] = Dot [x] y
 cons _ = Symbol "Error"
 
--- >>> cons [Constant 2, Combination [Symbol "cons", Constant 3, Combination [Symbol "cons", Constant 4, Symbol "nil"]]]
--- Combination [Constant 2,Constant 3,Constant 4]
+-- >>> runParser program "(cons (add 1 (add 3 (add 4 5))) (cons 1 (cons 3 (cons (add 2 (add 3 4)) nil))))"
+-- [([Combination [Symbol "cons",Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]],"")]
 
--- >>> eval Combination[]
+-- >>> runParser program "(cons (add 2 (add 3 4)) nil))"
+-- [([Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]],"")]
+
+-- >>> cons [Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(238,1)-(257,32): Non-exhaustive patterns in function combinationEval
+
+-- >>> cons [Constant 3, Combination [Constant 9]]
+-- Combination [Constant 3,Constant 9]
+
+-- >>> add [Constant 2,Combination [Symbol "add",Constant 3,Constant 4]]
+-- Constant 9
+
+-- >>> cons [Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(238,1)-(257,32): Non-exhaustive patterns in function combinationEval
+
+-- >>> eval (Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"])
+-- Combination [Constant 9]
+
+-- >>> runParser program "(add 2 (add 3 4))"
+-- [([Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]]],"")]
+
+-- >>> add [Constant 2,Combination [Symbol "add",Constant 3,Constant 4]]
+-- Constant 9
+
+-- >>> cons [Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(238,1)-(257,32): Non-exhaustive patterns in function combinationEval
+
+-- >>> cons [Constant 2, Combination [Symbol "cons", Constant 3, Combination [Symbol "cons", Constant 4, Symbol "nil"]]]
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(238,1)-(257,32): Non-exhaustive patterns in function combinationEval
+
+-- >>> printEval (Combination [Constant 2,Constant 3,Constant 4])
+-- "(2 3 4)"
+
+-- >>> eval Combination [Constant 1, Symbol "cons", Constant 2, Combination [Symbol "cons", Constant 3, Combination [Symbol "cons", Constant 4, Symbol "nil"]]]
+-- Couldn't match expected type ‘[Expr] -> t’ with actual type ‘Expr’
+-- Couldn't match expected type ‘Expr’
+--             with actual type ‘[Expr] -> Expr’
 
 
 -- >>> runParser program "(cons 1 (cons 2 (cons 3 (cons 4 nil))))"
