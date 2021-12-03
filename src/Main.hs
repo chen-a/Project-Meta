@@ -154,7 +154,14 @@ parseMeta s =
 goEval s  = do
      let result = parseMeta s
      case result of
-        Left metaAST -> mapM_ putStrLn (map printEval (map eval metaAST))
+        -- Left metaAST -> mapM_ putStrLn (map printEval (map eval metaAST))
+        Left metaAST -> mapM_ putStrLn (map printEval (map getExpr result))
+            where 
+                getExpr :: (Expr, Environment) -> Expr
+                getExpr (expr, env) = expr 
+                result = map (\x -> enveval x env) metaAST
+                    where
+                        env = Env []
         Right err -> putStrLn ("error: " ++ err)
 
 
@@ -186,6 +193,7 @@ printEval (Boolean b)
     | otherwise = "#f"
 printEval (Constant n) = show n
 printEval (Symbol s) = s
+printEval (Combination [Symbol "splice", x]) = printEval x
 printEval (Combination xs) = "(" ++ printCombine xs ++ ")"
     where
         printCombine [] = ""
@@ -244,11 +252,11 @@ combinationEval ((Symbol s) : xs)
     | s == "splice" = splice xs
     | s == "if" = conditional xs
 
-enveval :: Expr -> Expr
-enveval (Boolean b) = Boolean b
-enveval (Constant n) = Constant n
-enveval (Symbol s) = Symbol s
-enveval (Combination x) =  combinationEval x
+enveval :: Expr -> Environment -> (Expr, Environment)
+enveval (Boolean b) env = (Boolean b, env)
+enveval (Constant n) env = (Constant n, env)
+enveval (Symbol s) env = (Symbol s, env)
+enveval (Combination x) env =  envcombinationEval x env
 
 envcombinationEval :: [Expr] -> Environment -> (Expr, Environment) -- currently doesn't report errors?
 envcombinationEval [Constant x] env = (Constant x, env)
@@ -316,9 +324,6 @@ envsub [Combination e1, Combination e2] env = envsub [eval (Combination e1), eva
 
 envmult [Constant e1, Constant e2] env = (Constant (e1 * e2), env)
 envdivide [Constant e1, Constant e2] env = (Constant (e1 `div` e2), env)
-
-
-
 
 
 add, sub, mult, divide :: [Expr] -> Expr
@@ -468,10 +473,14 @@ envfunction [Combination e] env = (Boolean False, env)
 -- quote [Constant 1, Constant 2]
 -- Combination [Symbol "quote", Constant 1, Combination [Symbol "quote", Constant 2]]
 
-quote :: [Expr] -> Expr 
+quote :: [Expr] -> Expr
 quote [Constant x] = Constant x
 quote [Symbol s] = Symbol s
-quote [Combination xs] = Combination xs
+-- quote [Combination [Symbol "splice", x]] = eval x
+quote [Combination xs] = Combination (map checkSplice xs)
+    where 
+        checkSplice (Combination [Symbol "splice", x]) = eval x
+        checkSplice x = x
 quote [Dot xs x] = Dot xs x
 
 
@@ -484,10 +493,11 @@ envquote [Dot xs x] env = (Dot xs x, env)
 -- >>> quote [Combination [Constant 1, Constant 2]]
 -- Combination [Symbol "quote",Combination [Constant 1,Constant 2]]
 
-splice :: [Expr] -> Expr 
+splice :: [Expr] -> Expr
 splice [Constant x] = Constant x
 splice [Symbol s] = Symbol s
-splice [Combination xs] = combinationEval xs
+-- splice [Combination [Symbol "quote", x]] = eval x
+splice [Combination xs] = eval (Combination xs)
 
 envsplice :: [Expr] -> Environment -> (Expr, Environment)
 envsplice [Constant x] env = (Constant x, env)
