@@ -251,6 +251,13 @@ combinationEval ((Symbol s) : xs)
             consCombine [e] = eval e
             consCombine (e1:e2) = eval e1 ++ " . " ++ consCombine e2
 
+
+-- >>> runParser program "(cons 1 2)"
+-- [([Combination [Symbol "cons",Constant 1,Constant 2]],"")]
+
+-- >>> combinationEval [Symbol "cons",Constant 1,Constant 2]
+-- [Constant 1,Constant 2]
+
 equality :: [Expr] -> Expr
 equality [Constant e1, Constant e2]
     | e1 == e2 = Boolean True
