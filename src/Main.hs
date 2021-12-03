@@ -113,20 +113,6 @@ getSplice = do
     char '$'
     x <- getNextExpr
     return (Combination [Symbol "splice", x])
--- >>> runParser quote "'(1 2 3)"
--- [(Combination [Symbol "quote",Combination [Constant 1,Constant 2,Constant 3]],"")]
-
--- >>> runParser combination "((lambda args args)  a )    "
--- [(Combination [Combination [Symbol "lambda",Symbol "args",Symbol "args"],Symbol "a"],"    ")]
-
--- >>> runParser combination "(add 1 2)"
--- [(Combination [Symbol "add",Constant 1,Constant 2],"")]
-
--- >>> runParser getNextExpr "1;123"
--- [(Constant 1,";123")]
-
--- >>> runParser combination "(+ 3)"
--- [(Combination [Symbol "+",Constant 3],"")]
 
 -- Prints the AST
 printAst :: Expr -> String
@@ -148,7 +134,6 @@ main = do args <- getArgs
 
 goParse, goEval :: String -> IO ()
 goParse s = do
-     -- let ns = intercalate " " (lines s)
      let result = parseMeta s
      case result of
         Left metaAST -> mapM_ putStrLn (map printAst metaAST)
@@ -157,7 +142,6 @@ goParse s = do
 metaAST :: Parser [Expr]
 metaAST = do
     skip
-    --sepBy (comments <|> skip) getNextExpr
     sepBy (garbage) getNextExpr
 
 program :: Parser [Expr]
@@ -169,9 +153,6 @@ program = do
     skip
     return ss
 
--- >>> runParser program "(define length \n (lambda (lst) \n (if (null? lst) \n 0 \n (+ 1 (length (snd lst))))))"
--- [([Combination [Symbol "define",Symbol "length",Combination [Symbol "lambda",Combination [Symbol "lst"],Combination [Symbol "if",Combination [Symbol "null?",Symbol "lst"],Constant 0,Combination [Symbol "+",Constant 1,Combination [Symbol "length",Combination [Symbol "snd",Symbol "lst"]]]]]]],"")]
-
 parseMeta :: [Char] -> Either [Expr] [Char]
 parseMeta s =
     case result of
@@ -182,21 +163,10 @@ parseMeta s =
             result = runParser program s
 
 goEval s  = do
-     -- let ns = intercalate " " (lines s)
      let result = parseMeta s
      case result of
         Left metaAST -> mapM_ putStrLn (map printEval (map eval metaAST))
         Right err -> putStrLn ("error: " ++ err)
-
-        {-do
-     let parseResult = parseMeta s
-     case parseResult of
-        Left metaAST -> do
-            let evalResult = map evalMeta metaAST
-            case evalResult of
-                Left something -> map putStrLn (map printAst something)
-                Right err -> putStrLn ("Eval error:" ++ err)
-        Right err -> putStrLn ("Parse error: " ++ err) -}
 
 printEval :: Expr -> String 
 printEval (Boolean b)
@@ -214,7 +184,7 @@ printCombo (Combination (Symbol "quote" : y)) = "(" ++ quoteCombine y ++ ")"
     where
         quoteCombine [] = ""
         quoteCombine [e] = printCombo e
-        quoteCombine (e1:e2) = printCombo e1 ++ " " ++ quoteCombine e2
+        quoteCombine (e1:e2) = quoteCombine [e1] ++ " " ++ quoteCombine e2
 printCombo (Combination (Symbol "consNil" : y)) = "(" ++ consNil y ++ ")"
     where
         consNil [] = ""
@@ -224,9 +194,6 @@ printCombo (Combination (Symbol "consPair" : y)) = "(" ++ consPair y ++ ")"
     where
         consPair [e1, e2] = printEval e1 ++ " . " ++ printEval e2
         consPair (e1: e2) = printEval e1 ++ " " ++ consPair e2
-
-
--- printCombo (x:xs) = eval x ++ " " ++ printCombo xs
 
 eval :: Expr -> Expr
 eval (Boolean b) = Boolean b
@@ -243,7 +210,7 @@ combinationEval ((Symbol s) : xs)
     | s == "sub" = sub xs
     | s == "mul" = mult xs
     | s == "div" = divide xs
-    | s == "cons" = cons xs -- only apply "." if there is no nested list, returns Combination
+    | s == "cons" = cons xs 
     | s == "fst" = first xs
     | s == "snd" = second xs
     | s == "number?" = number xs
@@ -336,16 +303,16 @@ function [Combination e] = Boolean False
 quote :: [Expr] -> Expr -- currently doesn't evaluate levels
 quote [Constant x] = Combination [Symbol "quote", Constant x]
 quote [Symbol x] = Combination [Symbol "quote", Symbol x]
-quote (Constant x : xs) = Combination (Constant x : map multiquote xs)
+quote (Constant x : xs) = Combination (Symbol "quote" : Constant x : map multiquote xs)
     where
         multiquote :: Expr -> Expr
         multiquote (Constant x) = Constant x
         multiquote (Symbol x) = Symbol x
-quote (Symbol x : xs) = Combination [Symbol "quote", Symbol x, multiquote xs]
+quote (Symbol x : xs) = Combination (Symbol "quote" : Symbol x :  map multiquote xs)
     where
-        multiquote [Constant x] = Constant x
-        multiquote [Symbol x] = Symbol x
--- quote (Symbol x : xs) = Combination [Symbol "quote", Symbol x, quote xs]
+        multiquote :: Expr -> Expr
+        multiquote (Constant x) = Constant x
+        multiquote (Symbol x) = Symbol x
 quote [Combination xs] = quote xs
 
 splice :: [Expr] -> Expr -- currently doesn't evaluate levels
@@ -360,13 +327,27 @@ conditional [Boolean False, x, y] = y
 -- [([Combination [Symbol "quote",Combination [Symbol "x",Symbol "y",Symbol ".",Symbol "z"]]],"")]
 
 -- >>> quote [Combination [Symbol "x",Symbol "y",Symbol ".",Symbol "z"]]
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(347,9)-(348,40): Non-exhaustive patterns in function multiquote
+-- Combination [Symbol "quote",Symbol "x",Symbol "y",Symbol ".",Symbol "z"]
 
--- >>> runParser program "(cons 1 (cons 2 nil))"
--- [([Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Symbol "nil"]]],"")]
+-- >>> printCombo (Combination [Symbol "quote",Symbol "x",Symbol "y",Symbol ".",Symbol "z"])
+-- "(x y . z)"
 
--- >>> second [Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Symbol "nil"]]]
--- Combination [Symbol "cons",Constant 2,Symbol "nil"]
+-- >>> cons [Symbol "x",Symbol "y",Symbol ".",Symbol "z"]
+-- No instance for (Show ([Expr] -> Expr))
+--   arising from a use of ‘evalPrint’
+--   (maybe you haven't applied a function to enough arguments?)
+
+-- >>> runParser program "'(x y . z)"
+-- [([Combination [Symbol "quote",Combination [Symbol "x",Symbol "y",Symbol ".",Symbol "z"]]],"")]
+
+-- >>> quote [Combination [Symbol "x",Symbol "y",Symbol ".",Symbol "z"]]
+-- Combination [Symbol "quote",Symbol "x",Symbol "y",Symbol ".",Symbol "z"]
+
+-- >>> printCombo (Combination [Symbol "quote",Constant 1,Constant 2,Constant 3])
+-- "(1 2 3)"
+
+-- >>> quote [Combination [Symbol "x", Symbol "y", Symbol ".", Symbol "z"]]
+-- Combination [Symbol "quote",Symbol "x",Symbol "y",Symbol ".",Symbol "z"]
 
 -- stuff that might help with library------------------
 -- add [] = 0
