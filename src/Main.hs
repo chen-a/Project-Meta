@@ -157,15 +157,22 @@ parseMeta s =
 goEval s  = do
      let result = parseMeta s
      case result of
-        Left metaAST -> mapM_ putStrLn (map printEval (map getExpr result))
+        -- Left metaAST -> mapM_ putStrLn (map printEval (map getExpr result))
+           -- where
+             --   env = Env []
+               -- result = map (\x -> eval x env) metaAST
+
+        Left metaAST -> mapM_ putStrLn (map printEval (reval metaAST env))
             where
                 env = Env []
-                result = map (\x -> eval x env) metaAST
 
         --Left metaAST -> do
           --  let env = Env []
             --return mapM_ putStrLn (map printEval (map getExpr result))
               --  where result = map (\x -> eval x env) metaAST
+
+        --Left metaAST -> mapM_ putStrLn (map printEval (map eval metaAST))
+        --Right err -> putStrLn ("error: " ++ err)
         Right err -> putStrLn ("error: " ++ err)
 
 
@@ -179,6 +186,12 @@ envLookup (Env []) s = Nothing
 envLookup (Env ((vname,value) : rest)) s =
     if vname == s then Just value
                   else envLookup (Env rest) s
+
+envLookup2 :: Environment -> Expr -> Expr
+envLookup2 (Env ((vname,value) : rest)) (Symbol s) =
+    if vname == s then value
+                  else envLookup2 (Env rest) (Symbol s)
+
 
 envAdd :: Environment -> (String, Expr) -> Environment
 envAdd (Env ps) p = Env (p : ps)
@@ -223,8 +236,9 @@ eval :: Expr -> Environment -> (Expr, Environment)
 eval (Boolean b) env = (Boolean b, env)
 eval (Constant n) env = (Constant n, env)
 eval (Symbol s) env = (Symbol s, env)
-eval (Combination (Combination (Symbol "lambda" : ys) : values)) env = lambda [Combination ys] values env
+eval (Combination (Combination [Symbol "lambda", args, body] : values)) env = lambda [args, body] values env
 eval (Combination x) env =  combinationEval x env
+
 
 combinationEval :: [Expr] -> Environment -> (Expr, Environment) -- currently doesn't report errors?
 combinationEval [Constant x] env = (Constant x, env)
@@ -369,8 +383,9 @@ assign (Symbol x:xs) (n:ns) = (x, n) : assign xs ns
 
 -- >>> assign [Symbol "x", Symbol "y"] [Constant 3, Constant 4]
 
+
 lambda :: [Expr] -> [Expr] -> Environment -> (Expr, Environment) -- when you evaluate a lambda/macro, check that the AST node in the args position has the correct form
-lambda [Combination arg, body] values env = (body, envAddMult env (assign arg values))
+lambda [Combination arg, body] values (Env es) = (envLookup2 (Env (es ++ assign arg values)) body, Env (es ++ assign arg values))
 
 
 
@@ -378,14 +393,21 @@ lambda [Combination arg, body] values env = (body, envAddMult env (assign arg va
 -- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 3,Constant 4]],"")]
 -- 
 
--- >>> eval (Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 3,Constant 4])
--- No instance for (Show (Environment -> (Expr, Environment)))
---   arising from a use of ‘evalPrint’
---   (maybe you haven't applied a function to enough arguments?)
+-- >>> eval (Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 3,Constant 4]) (Env [("k", Constant 5)])
+-- (Constant 3,Env [("k",Constant 5),("x",Constant 3),("y",Constant 4)])
+-- 
 
--- >>> lambda [Combination [Symbol "x",Symbol "y"],Symbol "x"] [Constant 3, Constant 4] [("k", Constant 5)]
--- Couldn't match expected type ‘Environment’
---             with actual type ‘[(String, Expr)]’
+-- >>> eval (Symbol "x",Env [("k",Constant 5),("x",Constant 3),("y",Constant 4)])
+-- Couldn't match expected type ‘Expr’
+--             with actual type ‘(Expr, Environment)’
+
+-- >>> envLookup (Env [("k",Constant 5),("x",Constant 3),("y",Constant 4)]) "x"
+-- Just (Constant 3)
+
+
+-- >>> lambda [Combination [Symbol "x",Symbol "y"],Symbol "x"] [Constant 3, Constant 4] (Env [("k", Constant 5)])
+-- (Symbol "x",Env [("k",Constant 5),("x",Constant 3),("y",Constant 4)])
+-- 
 
 -- >>> runParser program "'(1 2 $3)"
 -- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Combination [Symbol "splice",Constant 3]]]],"")]
@@ -406,7 +428,7 @@ lambda [Combination arg, body] values env = (body, envAddMult env (assign arg va
 -- divide [] = 1
 -- divide (Constant x : xs) = x `div` sub xs -- if only one digit, return (1 / x)
 
-{--
+
 reval :: [Expr] -> Environment -> [Expr]
 reval [] env = []
 reval ((Boolean b) : xs) env = Boolean b : reval xs env
@@ -425,16 +447,16 @@ rcombinationEval ((Symbol s) : xs) env
     | s == "mul" = rmult xs env
     | s == "div" = rdivide xs env
     | s == "cons" = rcons xs env
-    -- | s == "fst" = rfirst xs env
-    -- | s == "snd" = rsecond xs env
-    -- | s == "number?" = rnumber xs env
-    -- | s == "pair?" = rpair xs env
-    -- | s == "list?" = rlist xs env
-    -- | s == "function?" = rfunction xs env
+    | s == "fst" = rfirst xs env
+    | s == "snd" = rsecond xs env
+    | s == "number?" = rnumber xs env
+    | s == "pair?" = rpair xs env
+    | s == "list?" = rlist xs env
+    | s == "function?" = rfunction xs env
     -- special forms
-    -- | s == "quote" = rquote xs env
-    -- | s == "splice" = rsplice xs env
-    -- | s == "if" = rconditional xs env
+    | s == "quote" = rquote xs env
+    | s == "splice" = rsplice xs env
+    | s == "if" = rconditional xs env
     -- | s == "lambda" = rlambda xs env
     -- | s == "define" = rdefine xs env
 
@@ -455,26 +477,91 @@ radd :: [Expr] -> Environment -> [Expr]
 radd [Constant e1, Constant e2] env = [Constant (e1 + e2)]
 radd [Constant e1, Combination e2] env = radd (Constant e1 : (reval [Combination e2] env)) env
 radd [Combination e1, Constant e2] env = radd  ((reval [Combination e1] env) ++ [Constant e2]) env
-radd [Combination e1, Combination e2] env = radd [reval [Combination e1] env, (reval [Combination e2] env)] env
+radd [Combination e1, Combination e2] env = radd  ((reval [Combination e1] env) ++ (reval [Combination e2] env)) env
 
 -- add [Combination x] env = eval (Combination x)
 
 rsub [Constant e1, Constant e2] env = [Constant (e1 - e2)]
 rsub [Combination ((Symbol x):xs)] env = rsub xs env
 rsub [Constant e1, Combination e2] env = rsub (Constant e1 : (reval [Combination e2] env)) env
-rsub [Combination e1, Constant e2] env = rsub ((reval [Combination e1] env) : Constant e2) env
-rsub [Combination e1, Combination e2] env = rsub ((reval (Combination e1) env) : (reval (Combination e2) env)) env
+rsub [Combination e1, Constant e2] env = rsub ((reval [Combination e1] env) ++ [Constant e2]) env
+rsub [Combination e1, Combination e2] env = rsub ((reval [Combination e1] env) ++ (reval [Combination e2] env)) env
 
 
 rmult [Constant e1, Constant e2] env = [Constant (e1 * e2)]
 rdivide [Constant e1, Constant e2] env = [Constant (e1 `div` e2)]
 
 rcons :: [Expr] -> Environment -> [Expr]
-rcons [x, Symbol "nil"] env = (Combination [getExpr (eval x env)], env)
-rcons [x, Combination (Symbol "cons" : xs)] env = cons [reval [x] env, (rcons [xs] env)] env
+rcons [x, Symbol "nil"] env = [Combination (reval [x] env)]
+rcons [x, Combination (Symbol "cons" : xs)] env = rcons ((reval [x] env) ++ (rcons xs env)) env
 rcons [x, Combination xs] env = (Combination (reval [x] env) : xs)
 rcons [x, Dot ys y] env = [Dot ((reval [x] env) ++ ys) y]
 rcons [x, y] env = [Dot (reval [x] env) y]
 rcons _ env = [Symbol "Error"]
+
+rfirst, rsecond, rnumber :: [Expr] -> Environment -> [Expr]
+rfirst [Combination x] env = a x
+    where
+        a [Symbol "cons", e1, e2] = [e1]
+        a [Constant e1, Constant e2] = [Constant e1]
+        a [Symbol "quote", Combination y] = rfirst [Combination y] env
+
+rsecond [Combination x] env = a x
+    where
+        a [Symbol "cons", e1, e2] = [e2]
+        a [Boolean e1, Boolean e2] = [Boolean e2]
+
+rnumber [Constant e] env = [Boolean True]
+rnumber [Boolean e] env = [Boolean False]
+rnumber [Symbol e] env = [Boolean False]
+rnumber [Combination e] env = [Boolean False]
+
+rpair :: [Expr] -> Environment -> [Expr]
+rpair [Constant e] env = [Boolean False]
+rpair [Boolean e] env = [Boolean False]
+rpair [Constant e1, Constant e2] env = [Boolean True]
+rpair [Boolean e1, Boolean e2] env = [Boolean True]
+rpair [Combination x] env = rpair x env
+rpair (Symbol x : ys) env = rpair ys env
+
+rlist :: [Expr] -> Environment -> [Expr]
+rlist [Boolean e] env= [Boolean False]
+rlist [Symbol e] env = [Boolean False]
+rlist (x:xs) env = [Boolean True]
+
+rfunction :: [Expr] -> Environment -> [Expr]
+rfunction [Symbol e] env = if e `elem` flist
+    then [Boolean True]
+    else [Boolean False]
+        where flist = ["eq?", "add", "sub", "mul", "div", "cons", "fst", "snd", "number?", "pair?", "list?", "function?"]
+rfunction [Constant e] env = [Boolean False]
+rfunction [Boolean e] env = [Boolean False]
+rfunction [Combination e] env = [Boolean False]
+
+rquote :: [Expr] -> Environment -> [Expr]
+rquote [Constant x] env = [Constant x]
+rquote [Symbol s] env = [Symbol s]
+-- quote [Combination [Symbol "splice", x]] = eval x
+rquote [Combination xs] env = [Combination (map checkSplice xs)]
+    where
+        checkSplice (Combination [Symbol "splice", x]) = getFirst (reval [x] env)
+        checkSplice x = x
+        getFirst [x, xs] = x
+rquote [Dot xs x] env = [Dot xs x]
+
+rsplice :: [Expr] -> Environment -> [Expr]
+rsplice [Constant x] env = [Constant x]
+rsplice [Symbol s] env = [Symbol s]
+-- splice [Combination [Symbol "quote", x]] = reval x
+rsplice [Combination xs] env = reval [Combination xs] env
+
+rconditional :: [Expr] -> Environment -> [Expr]
+rconditional [Boolean True, x, y] env = [x]
+rconditional [Boolean False, x, y] env = [y]
+
+{--
+
+
+
 
 --}
