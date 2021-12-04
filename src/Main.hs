@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 module Main where
 
 import Control.Monad
@@ -155,15 +156,19 @@ parseMeta s =
 goEval s  = do
      let result = parseMeta s
      case result of
-        -- Left metaAST -> mapM_ putStrLn (map printEval (map eval metaAST))
         Left metaAST -> mapM_ putStrLn (map printEval (map getExpr result))
             where 
-                getExpr :: (Expr, Environment) -> Expr
-                getExpr (expr, env) = expr 
+                env = Env []
                 result = map (\x -> eval x env) metaAST
-                    where
-                        env = Env []
+        --Left metaAST -> do
+          --  let env = Env []
+            --return mapM_ putStrLn (map printEval (map getExpr result))
+              --  where result = map (\x -> eval x env) metaAST
         Right err -> putStrLn ("error: " ++ err)
+
+
+define :: [Expr] -> Environment -> (Expr, Environment)
+define [Symbol var, value] env = (Symbol "", envAdd env (var, value))
 
 newtype Environment = Env [(String, Expr)] deriving Show
 
@@ -231,7 +236,7 @@ eval :: Expr -> Environment -> (Expr, Environment)
 eval (Boolean b) env = (Boolean b, env)
 eval (Constant n) env = (Constant n, env)
 eval (Symbol s) env = (Symbol s, env)
-eval (Combination (Combination (Symbol "lambda" : ys) : xs)) env = lambda (Combination (Symbol "lambda" : ys) : xs) env
+-- eval (Combination (Combination (Symbol "lambda" : ys) : xs)) env = lambda (Combination (Symbol "lambda" : ys) : xs) env
 eval (Combination x) env =  combinationEval x env
 
 combinationEval :: [Expr] -> Environment -> (Expr, Environment) -- currently doesn't report errors?
@@ -256,12 +261,11 @@ combinationEval ((Symbol s) : xs) env
     | s == "splice" = splice xs env
     | s == "if" = conditional xs env
     | s == "lambda" = lambda xs env
+    | s == "define" = define xs env
 
--- >>> runParser program "(cons 1 2)"
--- [([Combination [Symbol "cons",Constant 1,Constant 2]],"")]
+-- >>> runParser program "(define x 1)"
+-- [([Combination [Symbol "define",Symbol "x",Constant 1]],"")]
 
--- >>> combinationEval [Symbol "cons",Constant 1,Constant 2]
--- [Constant 1,Constant 2]
 
 equality :: [Expr] -> Environment-> (Expr, Environment)
 equality [Constant e1, Constant e2] env 
@@ -369,11 +373,18 @@ conditional :: [Expr] -> Environment -> (Expr, Environment)
 conditional [Boolean True, x, y] env = (x, env)
 conditional [Boolean False, x, y] env = (y, env)
 
+-- Lambda Environment [Args] Body
+-- (Combination (Symbol "lambda" : ys) : xs) env
 lambda :: [Expr] -> Environment -> (Expr, Environment) -- when you evaluate a lambda/macro, check that the AST node in the args position has the correct form
-lambda = undefined
+lambda [Combination arg, body] env = undefined 
 
--- >>> runParser program "((lambda () 1) 2)"
--- [([Combination [Combination [Symbol "lambda",Combination [],Constant 1],Constant 2]],"")]
+
+
+
+
+
+-- >>> runParser program "((lambda (x y) x) 3 4)"
+-- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 3,Constant 4]],"")]
 
 -- >>> runParser program "'(1 2 $3)"
 -- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Combination [Symbol "splice",Constant 3]]]],"")]
