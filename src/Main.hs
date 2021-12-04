@@ -157,14 +157,14 @@ parseMeta s =
 goEval s  = do
      let result = parseMeta s
      case result of
-        -- Left metaAST -> mapM_ putStrLn (map printEval (map getExpr result))
-           -- where
-             --   env = Env []
-               -- result = map (\x -> eval x env) metaAST
+         -- Left metaAST -> mapM_ putStrLn (map printEval (map getExpr result))
+            -- where
+               --  env = Env []
+                -- result = map (\x -> eval x env) metaAST
 
         Left metaAST -> mapM_ putStrLn (map printEval (reval metaAST env))
             where
-                env = Env []
+               env = Env []
 
         --Left metaAST -> do
           --  let env = Env []
@@ -173,6 +173,7 @@ goEval s  = do
 
         --Left metaAST -> mapM_ putStrLn (map printEval (map eval metaAST))
         --Right err -> putStrLn ("error: " ++ err)
+
         Right err -> putStrLn ("error: " ++ err)
 
 
@@ -525,6 +526,7 @@ rpair [Combination x] env = rpair x env
 rpair (Symbol x : ys) env = rpair ys env
 
 rlist :: [Expr] -> Environment -> [Expr]
+rlist [Constant e] env = [Boolean False]
 rlist [Boolean e] env= [Boolean False]
 rlist [Symbol e] env = [Boolean False]
 rlist (x:xs) env = [Boolean True]
