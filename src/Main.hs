@@ -15,6 +15,7 @@ data Expr = Boolean Bool
     | Symbol String
     | Combination [Expr]
     | Dot [Expr] Expr
+    | Lambda Environment [Expr] Expr
     deriving Show
 
 
@@ -230,6 +231,7 @@ eval :: Expr -> Environment -> (Expr, Environment)
 eval (Boolean b) env = (Boolean b, env)
 eval (Constant n) env = (Constant n, env)
 eval (Symbol s) env = (Symbol s, env)
+eval (Combination (Combination (Symbol "lambda" : ys) : xs)) env = lambda (Combination (Symbol "lambda" : ys) : xs) env
 eval (Combination x) env =  combinationEval x env
 
 combinationEval :: [Expr] -> Environment -> (Expr, Environment) -- currently doesn't report errors?
@@ -254,7 +256,6 @@ combinationEval ((Symbol s) : xs) env
     | s == "splice" = splice xs env
     | s == "if" = conditional xs env
     | s == "lambda" = lambda xs env
-
 
 -- >>> runParser program "(cons 1 2)"
 -- [([Combination [Symbol "cons",Constant 1,Constant 2]],"")]
@@ -347,7 +348,11 @@ function [Combination e] env = (Boolean False, env)
 quote :: [Expr] -> Environment -> (Expr, Environment)
 quote [Constant x] env = (Constant x, env)
 quote [Symbol s] env = (Symbol s, env)
-quote [Combination xs] env = (Combination xs, env)
+-- quote [Combination [Symbol "splice", x]] = eval x
+quote [Combination xs] env = (Combination (map checkSplice xs), env)
+    where 
+        checkSplice (Combination [Symbol "splice", x]) = getExpr (eval x env)
+        checkSplice x = x
 quote [Dot xs x] env = (Dot xs x, env)
 
 -- >>> quote [Combination [Constant 1, Constant 2]]
@@ -356,13 +361,15 @@ quote [Dot xs x] env = (Dot xs x, env)
 splice :: [Expr] -> Environment -> (Expr, Environment)
 splice [Constant x] env = (Constant x, env)
 splice [Symbol s] env = (Symbol s, env)
-splice [Combination xs] env = combinationEval xs env
+-- splice [Combination [Symbol "quote", x]] = eval x
+splice [Combination xs] env = eval (Combination xs) env
+
 
 conditional :: [Expr] -> Environment -> (Expr, Environment)
 conditional [Boolean True, x, y] env = (x, env)
 conditional [Boolean False, x, y] env = (y, env)
 
-lambda :: [Expr] -> Environment -> (Expr, Environment)
+lambda :: [Expr] -> Environment -> (Expr, Environment) -- when you evaluate a lambda/macro, check that the AST node in the args position has the correct form
 lambda = undefined
 
 -- >>> runParser program "((lambda () 1) 2)"
