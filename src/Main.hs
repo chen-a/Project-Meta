@@ -253,6 +253,7 @@ combinationEval ((Symbol s) : xs) env
     | s == "quote" = quote xs env
     | s == "splice" = splice xs env
     | s == "if" = conditional xs env
+    | s == "lambda" = lambda xs env
 
 
 -- >>> runParser program "(cons 1 2)"
@@ -297,24 +298,6 @@ cons [x, Combination xs] env = (Combination (getExpr(eval x env) : xs), env)
 cons [x, Dot ys y] env = (Dot (getExpr (eval x env) : ys) y, env) 
 cons [x, y] env = (Dot [getExpr (eval x env)] y, env)
 cons _ env = (Symbol "Error", env)
-
--- >>> runParser program "(cons (add 1 (add 3 (add 4 5))) (cons 1 (cons 3 (cons (add 2 (add 3 4)) nil))))"
--- [([Combination [Symbol "cons",Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]],"")]
-
--- >>> cons [Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]], Constant 1]]]]
--- Dot [Constant 13,Constant 1,Constant 3,Constant 9] (Constant 1)
-
--- >>> cons [Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]], Constant 1]]
--- Dot [Constant 3,Constant 9] (Constant 1)
-
--- >>> cons [Combination [Symbol "add",Constant 2,Constant 7], Constant 1]
--- Dot [Constant 9] (Constant 1)
-
--- >>> eval (Combination [Symbol "add",Constant 2,Constant 7])
--- Constant 9
-
--- >>> cons [Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]
--- Combination [Constant 1,Constant 3,Constant 9]
 
 first, second, number :: [Expr] -> Environment -> (Expr, Environment)
 first [Combination x] env = a x
@@ -379,6 +362,11 @@ conditional :: [Expr] -> Environment -> (Expr, Environment)
 conditional [Boolean True, x, y] env = (x, env)
 conditional [Boolean False, x, y] env = (y, env)
 
+lambda :: [Expr] -> Environment -> (Expr, Environment)
+lambda = undefined
+
+-- >>> runParser program "((lambda () 1) 2)"
+-- [([Combination [Combination [Symbol "lambda",Combination [],Constant 1],Constant 2]],"")]
 
 -- >>> runParser program "'(1 2 $3)"
 -- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Combination [Symbol "splice",Constant 3]]]],"")]
@@ -396,7 +384,7 @@ conditional [Boolean False, x, y] env = (y, env)
 -- "(x y . z)"
 
 -- >>> cons [Symbol "x",Symbol "y",Symbol ".",Symbol "z"]
--- No instance for (Show ([Expr] -> Expr))
+-- No instance for (Show (Environment -> (Expr, Environment)))
 --   arising from a use of ‘evalPrint’
 --   (maybe you haven't applied a function to enough arguments?)
 
@@ -404,13 +392,17 @@ conditional [Boolean False, x, y] env = (y, env)
 -- [([Combination [Symbol "quote",Combination [Symbol "x",Symbol "y",Symbol ".",Symbol "z"]]],"")]
 
 -- >>> quote [Combination [Symbol "x",Symbol "y",Symbol ".",Symbol "z"]]
--- Combination [Symbol "quote",Symbol "x",Symbol "y",Symbol ".",Symbol "z"]
+-- No instance for (Show (Environment -> (Expr, Environment)))
+--   arising from a use of ‘evalPrint’
+--   (maybe you haven't applied a function to enough arguments?)
 
 -- >>> printCombo (Combination [Symbol "quote",Constant 1,Constant 2,Constant 3])
 -- "(1 2 3)"
 
 -- >>> quote [Combination [Symbol "x", Symbol "y", Symbol ".", Symbol "z"]]
--- Combination [Symbol "quote",Symbol "x",Symbol "y",Symbol ".",Symbol "z"]
+-- No instance for (Show (Environment -> (Expr, Environment)))
+--   arising from a use of ‘evalPrint’
+--   (maybe you haven't applied a function to enough arguments?)
 
 -- stuff that might help with library------------------
 -- add [] = 0
