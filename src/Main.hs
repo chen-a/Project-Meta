@@ -157,14 +157,14 @@ parseMeta s =
 goEval s  = do
      let result = parseMeta s
      case result of
-         -- Left metaAST -> mapM_ putStrLn (map printEval (map getExpr result))
-            -- where
-               --  env = Env []
-                -- result = map (\x -> eval x env) metaAST
+        Left metaAST -> mapM_ putStrLn (map printEval (map getExpr result))
+             where
+                 env = Env []
+                 result = map (\x -> eval x env) metaAST
 
-        Left metaAST -> mapM_ putStrLn (map printEval (reval metaAST env))
-            where
-               env = Env []
+        --Left metaAST -> mapM_ putStrLn (map printEval (reval metaAST env))
+          --  where
+            --   env = Env []
 
         --Left metaAST -> do
           --  let env = Env []
