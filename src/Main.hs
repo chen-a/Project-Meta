@@ -162,7 +162,7 @@ goEval s  = do
              --    env = Env []
                --  result = map (\x -> eval x env) metaAST
 
-        Left metaAST -> mapM_ putStrLn (map printEval (filter filterBlanks (reval metaAST env)))
+        Left metaAST -> mapM_ putStrLn (map printEval (filter filterBlanks (eval metaAST env)))
             where
                 env = Env []
                 filterBlanks x = case x of
@@ -171,6 +171,14 @@ goEval s  = do
 
         Right err -> putStrLn ("error: " ++ err)
 
+
+
+-- >>> eval [Combination[(Symbol "eq?"), Constant(2), Constant(2)]] (Env [("k", Constant 5)])
+-- [Boolean True]
+
+-- >>> eval [Boolean True] (Env [("k", Constant 5)])
+-- [Boolean True]
+ 
 
 define :: [Expr] -> Environment -> (Expr, Environment)
 define [Symbol var, value] env = (Symbol "", envAdd env (var, value))
@@ -227,7 +235,7 @@ printEval (Dot xs x) = "(" ++ printCombine xs ++ " . " ++ printEval x ++ ")"
         printCombine [e] = printEval e
         printCombine (e:es) = printEval e ++ " " ++ printCombine es
 
-
+{--
 eval :: Expr -> Environment -> (Expr, Environment)
 eval (Boolean b) env = (Boolean b, env)
 eval (Constant n) env = (Constant n, env)
@@ -412,6 +420,7 @@ lambda [Combination arg, body] values (Env es) = (envLookup2 (Env (es ++ assign 
 -- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(309,9)-(310,40): Non-exhaustive patterns in function multiquote
 
 
+--}
 
 -- stuff that might help with library------------------
 -- add [] = 0
@@ -425,84 +434,84 @@ lambda [Combination arg, body] values (Env es) = (envLookup2 (Env (es ++ assign 
 -- divide (Constant x : xs) = x `div` sub xs -- if only one digit, return (1 / x)
 
 
-reval :: [Expr] -> Environment -> [Expr]
-reval [] env = []
-reval ((Boolean b) : xs) env = Boolean b : reval xs env
-reval ((Constant n) : xs) env = Constant n : reval xs env
-reval ((Symbol s) : xs) env = Symbol s : reval xs env
-reval ((Combination x) : xs) env = rcombinationEval x env ++ reval xs env
+eval :: [Expr] -> Environment -> [Expr]
+eval [] env = []
+eval ((Boolean b) : xs) env = Boolean b : eval xs env
+eval ((Constant n) : xs) env = Constant n : eval xs env
+eval ((Symbol s) : xs) env = Symbol s : eval xs env
+eval ((Combination x) : xs) env = combinationEval x env ++ eval xs env
 
-rcombinationEval :: [Expr] -> Environment -> [Expr]
-rcombinationEval [Constant x] env = [Constant x]
-rcombinationEval [Combination x] env = rcombinationEval x env
-rcombinationEval ((Symbol s) : xs) env
+combinationEval :: [Expr] -> Environment -> [Expr]
+combinationEval [Constant x] env = [Constant x]
+combinationEval [Combination x] env = combinationEval x env
+combinationEval ((Symbol s) : xs) env
     --intrinsics
-    |  s == "eq?" = requality xs env
-    | s == "add" = radd xs env
-    | s == "sub" = rsub xs env
-    | s == "mul" = rmult xs env
-    | s == "div" = rdivide xs env
-    | s == "cons" = rcons xs env
-    | s == "fst" = rfirst xs env
-    | s == "snd" = rsecond xs env
+    |  s == "eq?" = equality xs env
+    | s == "add" = add xs env
+    | s == "sub" = sub xs env
+    | s == "mul" = mult xs env
+    | s == "div" = divide xs env
+    | s == "cons" = cons xs env
+    | s == "fst" = first xs env
+    | s == "snd" = second xs env
     | s == "number?" = rnumber xs env
-    | s == "pair?" = rpair xs env
-    | s == "list?" = rlist xs env
-    | s == "function?" = rfunction xs env
+    | s == "pair?" = pair xs env
+    | s == "list?" = list xs env
+    | s == "function?" = function xs env
     -- special forms
-    | s == "quote" = rquote xs env
-    | s == "splice" = rsplice xs env
-    | s == "if" = rconditional xs env
+    | s == "quote" = quote xs env
+    | s == "splice" = splice xs env
+    | s == "if" = conditional xs env
     -- | s == "lambda" = rlambda xs env
     -- | s == "define" = rdefine xs env
 
 
-requality :: [Expr] -> Environment -> [Expr]
-requality [Constant e1, Constant e2] env
+equality :: [Expr] -> Environment -> [Expr]
+equality [Constant e1, Constant e2] env
     | e1 == e2 = [Boolean True]
     | otherwise = [Boolean False]
-requality [Boolean e1, Boolean e2] env
+equality [Boolean e1, Boolean e2] env
     | e1 == e2 = [Boolean True]
     | otherwise = [Boolean False]
-requality [Constant e1, Combination (Symbol "add":xs)] env = requality ((Constant e1) : (radd xs env)) env
-requality [Combination (Symbol "add":xs), Constant e2] env = requality ((radd xs env) ++ [Constant e2]) env
+equality [Constant e1, Combination (Symbol "add":xs)] env = equality ((Constant e1) : (add xs env)) env
+equality [Combination (Symbol "add":xs), Constant e2] env = equality ((add xs env) ++ [Constant e2]) env
 
--- radd, rsub, rmult, rdivide :: [Expr] -> Environment -> [Expr]
+-- add, sub, mult, divide :: [Expr] -> Environment -> [Expr]
 
-radd :: [Expr] -> Environment -> [Expr]
-radd [Constant e1, Constant e2] env = [Constant (e1 + e2)]
-radd [Constant e1, Combination e2] env = radd (Constant e1 : (reval [Combination e2] env)) env
-radd [Combination e1, Constant e2] env = radd  ((reval [Combination e1] env) ++ [Constant e2]) env
-radd [Combination e1, Combination e2] env = radd  ((reval [Combination e1] env) ++ (reval [Combination e2] env)) env
+add :: [Expr] -> Environment -> [Expr]
+add [Constant e1, Constant e2] env = [Constant (e1 + e2)]
+add [Constant e1, Combination e2] env = add (Constant e1 : (eval [Combination e2] env)) env
+add [Combination e1, Constant e2] env = add  ((eval [Combination e1] env) ++ [Constant e2]) env
+add [Combination e1, Combination e2] env = add  ((eval [Combination e1] env) ++ (eval [Combination e2] env)) env
 
 -- add [Combination x] env = eval (Combination x)
 
-rsub [Constant e1, Constant e2] env = [Constant (e1 - e2)]
-rsub [Combination ((Symbol x):xs)] env = rsub xs env
-rsub [Constant e1, Combination e2] env = rsub (Constant e1 : (reval [Combination e2] env)) env
-rsub [Combination e1, Constant e2] env = rsub ((reval [Combination e1] env) ++ [Constant e2]) env
-rsub [Combination e1, Combination e2] env = rsub ((reval [Combination e1] env) ++ (reval [Combination e2] env)) env
+sub [Constant e1, Constant e2] env = [Constant (e1 - e2)]
+sub [Combination ((Symbol x):xs)] env = sub xs env
+sub [Constant e1, Combination e2] env = sub (Constant e1 : (eval [Combination e2] env)) env
+sub [Combination e1, Constant e2] env = sub ((eval [Combination e1] env) ++ [Constant e2]) env
+sub [Combination e1, Combination e2] env = sub ((eval [Combination e1] env) ++ (eval [Combination e2] env)) env
 
 
-rmult [Constant e1, Constant e2] env = [Constant (e1 * e2)]
-rdivide [Constant e1, Constant e2] env = [Constant (e1 `div` e2)]
+mult [Constant e1, Constant e2] env = [Constant (e1 * e2)]
+divide [Constant e1, Constant e2] env = [Constant (e1 `div` e2)]
 
-rcons :: [Expr] -> Environment -> [Expr]
-rcons [x, Symbol "nil"] env = [Combination (reval [x] env)]
-rcons [x, Combination (Symbol "cons" : xs)] env = rcons ((reval [x] env) ++ (rcons xs env)) env
-rcons [x, Combination xs] env = (Combination (reval [x] env) : xs)
-rcons [x, Dot ys y] env = [Dot ((reval [x] env) ++ ys) y]
-rcons [x, y] env = [Dot (reval [x] env) y]
-rcons _ env = [Symbol "Error"]
+cons :: [Expr] -> Environment -> [Expr]
+cons [x, Symbol "nil"] env = [Combination (eval [x] env)]
+cons [x, Combination (Symbol "cons" : xs)] env = cons ((eval [x] env) ++ (cons xs env)) env
+cons [x, Combination xs] env = (Combination (eval [x] env) : xs)
+cons [x, Dot ys y] env = [Dot ((eval [x] env) ++ ys) y]
+cons [x, y] env = [Dot (eval [x] env) y]
+cons _ env = [Symbol "Error"]
 
-rfirst, rsecond, rnumber :: [Expr] -> Environment -> [Expr]
-rfirst [Combination x] env = a x
+first, second, rnumber :: [Expr] -> Environment -> [Expr]
+first [Combination x] env = a x
     where
         a [Symbol "cons", e1, e2] = [e1]
         a [Constant e1, Constant e2] = [Constant e1]
-        a [Symbol "quote", Combination y] = rfirst [Combination y] env
+        a [Symbol "quote", Combination y] = first [Combination y] env
 
-rsecond [Combination x] env = a x
+second [Combination x] env = a x
     where
         a [Symbol "cons", e1, e2] = [e2]
         a [Boolean e1, Boolean e2] = [Boolean e2]
@@ -512,49 +521,49 @@ rnumber [Boolean e] env = [Boolean False]
 rnumber [Symbol e] env = [Boolean False]
 rnumber [Combination e] env = [Boolean False]
 
-rpair :: [Expr] -> Environment -> [Expr]
-rpair [Constant e] env = [Boolean False]
-rpair [Boolean e] env = [Boolean False]
-rpair [Constant e1, Constant e2] env = [Boolean True]
-rpair [Boolean e1, Boolean e2] env = [Boolean True]
-rpair [Combination x] env = rpair x env
-rpair (Symbol x : ys) env = rpair ys env
+pair :: [Expr] -> Environment -> [Expr]
+pair [Constant e] env = [Boolean False]
+pair [Boolean e] env = [Boolean False]
+pair [Constant e1, Constant e2] env = [Boolean True]
+pair [Boolean e1, Boolean e2] env = [Boolean True]
+pair [Combination x] env = pair x env
+pair (Symbol x : ys) env = pair ys env
 
-rlist :: [Expr] -> Environment -> [Expr]
-rlist [Constant e] env = [Boolean False]
-rlist [Boolean e] env= [Boolean False]
-rlist [Symbol e] env = [Boolean False]
-rlist (x:xs) env = [Boolean True]
+list :: [Expr] -> Environment -> [Expr]
+list [Constant e] env = [Boolean False]
+list [Boolean e] env= [Boolean False]
+list [Symbol e] env = [Boolean False]
+list (x:xs) env = [Boolean True]
 
-rfunction :: [Expr] -> Environment -> [Expr]
-rfunction [Symbol e] env = if e `elem` flist
+function :: [Expr] -> Environment -> [Expr]
+function [Symbol e] env = if e `elem` flist
     then [Boolean True]
     else [Boolean False]
         where flist = ["eq?", "add", "sub", "mul", "div", "cons", "fst", "snd", "number?", "pair?", "list?", "function?"]
-rfunction [Constant e] env = [Boolean False]
-rfunction [Boolean e] env = [Boolean False]
-rfunction [Combination e] env = [Boolean False]
+function [Constant e] env = [Boolean False]
+function [Boolean e] env = [Boolean False]
+function [Combination e] env = [Boolean False]
 
-rquote :: [Expr] -> Environment -> [Expr]
-rquote [Constant x] env = [Constant x]
-rquote [Symbol s] env = [Symbol s]
+quote :: [Expr] -> Environment -> [Expr]
+quote [Constant x] env = [Constant x]
+quote [Symbol s] env = [Symbol s]
 -- quote [Combination [Symbol "splice", x]] = eval x
-rquote [Combination xs] env = [Combination (map checkSplice xs)]
+quote [Combination xs] env = [Combination (map checkSplice xs)]
     where
-        checkSplice (Combination [Symbol "splice", x]) = getFirst (reval [x] env)
+        checkSplice (Combination [Symbol "splice", x]) = getFirst (eval [x] env)
         checkSplice x = x
         getFirst [x, xs] = x
-rquote [Dot xs x] env = [Dot xs x]
+quote [Dot xs x] env = [Dot xs x]
 
-rsplice :: [Expr] -> Environment -> [Expr]
-rsplice [Constant x] env = [Constant x]
-rsplice [Symbol s] env = [Symbol s]
--- splice [Combination [Symbol "quote", x]] = reval x
-rsplice [Combination xs] env = reval [Combination xs] env
+splice :: [Expr] -> Environment -> [Expr]
+splice [Constant x] env = [Constant x]
+splice [Symbol s] env = [Symbol s]
+-- splice [Combination [Symbol "quote", x]] = eval x
+splice [Combination xs] env = eval [Combination xs] env
 
-rconditional :: [Expr] -> Environment -> [Expr]
-rconditional [Boolean True, x, y] env = [x]
-rconditional [Boolean False, x, y] env = [y]
+conditional :: [Expr] -> Environment -> [Expr]
+conditional [Boolean True, x, y] env = [x]
+conditional [Boolean False, x, y] env = [y]
 
 {--
 
