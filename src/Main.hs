@@ -157,22 +157,17 @@ parseMeta s =
 goEval s  = do
      let result = parseMeta s
      case result of
-        Left metaAST -> mapM_ putStrLn (map printEval (map getExpr result))
-             where
-                 env = Env []
-                 result = map (\x -> eval x env) metaAST
+        -- Left metaAST -> mapM_ putStrLn (map printEval (map getExpr result))
+           --  where
+             --    env = Env []
+               --  result = map (\x -> eval x env) metaAST
 
-        --Left metaAST -> mapM_ putStrLn (map printEval (reval metaAST env))
-          --  where
-            --   env = Env []
-
-        --Left metaAST -> do
-          --  let env = Env []
-            --return mapM_ putStrLn (map printEval (map getExpr result))
-              --  where result = map (\x -> eval x env) metaAST
-
-        --Left metaAST -> mapM_ putStrLn (map printEval (map eval metaAST))
-        --Right err -> putStrLn ("error: " ++ err)
+        Left metaAST -> mapM_ putStrLn (map printEval (filter filterBlanks (reval metaAST env)))
+            where
+                env = Env []
+                filterBlanks x = case x of
+                                    Symbol "" -> True
+                                    _ -> False
 
         Right err -> putStrLn ("error: " ++ err)
 
