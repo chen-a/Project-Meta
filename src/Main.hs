@@ -165,12 +165,11 @@ goEval s  = do
         Left metaAST -> mapM_ putStrLn (map printEval (filter filterBlanks (eval metaAST env)))
             where
                 env = Env []
-        Right err -> putStrLn ("error: " ++ err)
-
-filterBlanks :: Expr -> Bool
-filterBlanks x = case x of
+                filterBlanks x = case x of
                                     Symbol "" -> False
                                     _ -> True
+
+        Right err -> putStrLn ("error: " ++ err)
 
 -- >>> filter filterBlanks [Symbol "", Symbol "5", Constant 5, Combination[Symbol "5"]]
 -- [Symbol "5",Constant 5,Combination [Symbol "5"]]
@@ -557,14 +556,27 @@ quote [Combination xs] env = [Combination (map checkSplice xs)]
     where
         checkSplice (Combination [Symbol "splice", x]) = getFirst (eval [x] env)
         checkSplice x = x
-        getFirst [x, xs] = x
+       -- getFirst [x, xs] = x
 quote [Dot xs x] env = [Dot xs x]
+
+getFirst :: [Expr] -> Expr
+getFirst [x, xs] = x
+getFirst [x] = x
 
 splice :: [Expr] -> Environment -> [Expr]
 splice [Constant x] env = [Constant x]
 splice [Symbol s] env = [Symbol s]
 -- splice [Combination [Symbol "quote", x]] = eval x
 splice [Combination xs] env = eval [Combination xs] env
+
+-- >>> runParser program "'(1 2 $3)"
+-- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Combination [Symbol "splice",Constant 3]]]],"")]
+
+-- >>> eval [Constant 3] (Env [("test", Constant 5)])
+-- [Constant 3]
+
+-- >>> quote [Combination [Constant 1,Constant 2,Combination [Symbol "splice",Constant 3]]] (Env [("k", Constant 5)])
+-- [Combination [Constant 1,Constant 2,Constant 3]]
 
 conditional :: [Expr] -> Environment -> [Expr]
 conditional [Boolean True, x, y] env = [x]
