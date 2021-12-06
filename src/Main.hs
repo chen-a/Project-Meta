@@ -164,17 +164,18 @@ goEval s  = do
 
         Left metaAST -> mapM_ putStrLn (map printEval (filter filterBlanks (eval metaAST env)))
             where
-                env = Env []
+                env = Env [("test", Constant 100000000000)]
                 filterBlanks x = case x of
                                     Symbol "" -> True
                                     _ -> False
 
         Right err -> putStrLn ("error: " ++ err)
 
+-- >>> runParser program "#t \n #f"
+-- [([Boolean True,Boolean False],"")]
 
-
--- >>> eval [Combination[(Symbol "eq?"), Constant(2), Constant(2)]] (Env [("k", Constant 5)])
--- [Boolean True]
+-- >>> map printEval (eval [Boolean True,Boolean False] (Env [("k", Constant 5)]))
+-- ["#t","#f"]
 
 -- >>> eval [Boolean True] (Env [("k", Constant 5)])
 -- [Boolean True]
