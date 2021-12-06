@@ -1,0 +1,5 @@
+(defun (id x) x)
+(id 1)
+(id 4)
+(defun (add1 x y) (add x (add y 1)))
+(add1 1 2)

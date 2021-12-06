@@ -1,0 +1,17 @@
+(define null?  (lambda (lst) (eq? lst nil)))
+
+(define foldr
+  (lambda (f z lst)
+    (if (null? lst)
+        z
+        (f (fst lst) (foldr f z (snd lst))))))
+	
+(defmacro (tests . tests)
+  (foldr (lambda (thisTest rest)
+           {if (eq? $(fst thisTest) $(fst (snd thisTest)))
+                $rest
+                (cons (list $(cons 'quote (cons (fst thisTest) '())) $(fst (snd thisTest))) $rest)})
+         ''()
+         tests))
+
+(tests [1 1] [2 2] [3 4] [5 6])

@@ -1,0 +1,5 @@
+(let* [
+      (f (lambda (x y) (add x y)))
+      (g (lambda (x y) (mul x y)))
+      ] (g (f 1 (g 2 2)) (f (f 1 1) 2))
+)

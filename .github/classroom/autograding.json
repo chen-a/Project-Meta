@@ -723,6 +723,214 @@
       "comparison": "included",
       "timeout": 0.5,
       "points": 1
+    },
+    {
+      "name": "Meta Lib Test: ./lib/arith.meta & ./lib-tests/arith/times.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/arith.meta ./lib-tests/arith/times.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/arith.meta & ./lib-tests/arith/plus.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/arith.meta ./lib-tests/arith/plus.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/arith.meta & ./lib-tests/arith/minus.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/arith.meta ./lib-tests/arith/minus.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/arith.meta & ./lib-tests/arith/div.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/arith.meta ./lib-tests/arith/div.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/bool.meta & ./lib-tests/bool/quarter.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/bool.meta ./lib-tests/bool/quarter.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/bool.meta & ./lib-tests/bool/or-2.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/bool.meta ./lib-tests/bool/or-2.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/bool.meta & ./lib-tests/bool/or-1.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/bool.meta ./lib-tests/bool/or-1.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/bool.meta & ./lib-tests/bool/cond-2.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/bool.meta ./lib-tests/bool/cond-2.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/bool.meta & ./lib-tests/bool/cond-1.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/bool.meta ./lib-tests/bool/cond-1.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/bool.meta & ./lib-tests/bool/and-2.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/bool.meta ./lib-tests/bool/and-2.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/bool.meta & ./lib-tests/bool/and-1.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/bool.meta ./lib-tests/bool/and-1.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/define.meta & ./lib-tests/define/let-2.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/define.meta ./lib-tests/define/let-2.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/define.meta & ./lib-tests/define/let-1.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/define.meta ./lib-tests/define/let-1.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/define.meta & ./lib-tests/define/defun-3.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/define.meta ./lib-tests/define/defun-3.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/define.meta & ./lib-tests/define/defun-2.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/define.meta ./lib-tests/define/defun-2.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/define.meta & ./lib-tests/define/defun-1.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/define.meta ./lib-tests/define/defun-1.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/define.meta & ./lib-tests/define/defmacro-4.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/define.meta ./lib-tests/define/defmacro-4.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/define.meta & ./lib-tests/define/defmacro-2.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/define.meta ./lib-tests/define/defmacro-2.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
+    },
+
+    {
+      "name": "Meta Lib Test: ./lib/define.meta & ./lib-tests/define/defmacro-1.meta",
+      "setup": "",
+      "run": "./testLib.sh ./lib/define.meta ./lib-tests/define/defmacro-1.meta",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 0.5,
+      "points": 1
     }
     
   ]

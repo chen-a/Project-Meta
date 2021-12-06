@@ -1,0 +1,4 @@
+(defun (sum1 x . xs) (foldr add x xs))
+
+(sum1 1 2 3)
+(sum1 1)

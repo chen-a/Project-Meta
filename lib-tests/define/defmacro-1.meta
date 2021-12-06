@@ -1,0 +1,5 @@
+(defmacro (foo bar) bar)
+(foo 1)
+
+(defmacro (dda x y) (add $y $x))
+(dda (add 1 2) (add 3 4))
