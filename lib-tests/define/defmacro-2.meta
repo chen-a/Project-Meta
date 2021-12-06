@@ -1,0 +1,5 @@
+(defmacro (test this)
+{if (eq? $(fst this) $(fst (snd this))) #t #f})
+
+(test [1 1])
+(test [1 2])

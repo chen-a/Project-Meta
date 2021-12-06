@@ -1,0 +1,14 @@
+(cond
+  [(eq? 1 1) 3]
+  [(eq? 1 1) 4]
+)
+
+(cond
+  [#f 3]
+  [#f 4]
+  [(eq? 5 5) (eq? 1 2)]
+)
+
+;; Optionally, one of the di may be the symbol else; in that case, if none of
+;; the previous dj have evaluated to true, the cond should evaluate to ei
+(cond [#f 1] [#f 2] [else 10])

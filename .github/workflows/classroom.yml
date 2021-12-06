@@ -38,4 +38,5 @@ jobs:
         sudo chmod +x bin/metachk
         sudo chmod +x test.sh
         sudo chmod +x testEval.sh
+        sudo chmod +x testLib.sh
     - uses: education/autograding@v1

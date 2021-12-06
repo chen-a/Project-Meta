@@ -1,0 +1,8 @@
+;; should evaluate its arguments
+(and (and #t #t) (and #f #f))
+
+;; should not eval arguments after the first false one
+(and #f (and 1 2))
+
+;; deeper nesting
+(and (and (and #t #f) #f) (and #t (and #t #t)))

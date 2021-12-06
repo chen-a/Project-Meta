@@ -1,0 +1,5 @@
+;; should not evaluate arguments past first false
+(or #t #f #t (and 1 2))
+
+;; if none evaluate to #f, return first truthy value
+(or 1 #t #t -1)
