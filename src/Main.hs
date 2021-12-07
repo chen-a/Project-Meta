@@ -274,7 +274,8 @@ combinationEval ((Symbol s) : xs) env l
     | s == "list?" = list xs env
     | s == "function?" = function xs env
     -- special forms
-    | s == "quote" = quote xs env (l+1)
+    | s == "quote" && l > 0 = let (ex, en) = quote xs env (l+1) in (Combination [Symbol "quote", ex], env)
+    | s == "quote" && l == 0 = quote xs env (l+1)
     | s == "splice" = splice xs env (l-1)
     | s == "if" = conditional xs env
     -- s == "lambda" = lambda xs env
@@ -393,7 +394,7 @@ quote [Symbol s] env 0 =  (Symbol s, env)
 quote [Symbol s] env n = (Symbol s, env)
 quote [Combination xs] env 0 = (firstExpr (eval [Combination xs] env 0), env)
 quote [Combination [Symbol "splice", x]] env n = quote [x] env (n - 1) 
-quote [Combination [Symbol "quote", x]] env n = quote [x] env (n + 1)
+quote [Combination [Symbol "quote", x]] env n = let (ex, en) = quote [x] env (n + 1) in (Combination [Symbol "quote", ex], env)
 quote [Combination (x:xs)] env n = let ex = eval xs env n in (Combination (x:ex), env)
 quote [Dot xs x] env n = (Dot xs x, env)
 
@@ -401,9 +402,15 @@ quote [Dot xs x] env n = (Dot xs x, env)
 -- [([Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2,Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]]]]]]]],"")]
 
 
--- >>> quote [Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2,Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]]]]]]] (Env []) 1
--- (Combination [Symbol "x",Combination [Constant 2,Combination [Symbol "add",Constant 2,Constant 3],Constant 5]],Env [])
--- 
+-- >>> quote [Combination [Symbol "x", Combination [Symbol "quote",Combination [Constant 2, Constant 3]]]] (Env []) 1
+-- (Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2,Constant 3]]],Env [])
+
+-- >>> eval [Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2,Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]]]]]]]] (Env []) 0
+-- [Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2,Combination [Symbol "add",Constant 2,Constant 3],Constant 5]]]]
+
+-- >>> printEval (Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2,Combination [Symbol "add",Constant 2,Constant 3],Constant 5]]])
+-- "(x (quote (2 (add 2 3) 5)))"
+
 
 -- >>> printEval (Combination [Symbol "x",Combination [Constant 2,Combination [Symbol "add",Constant 2,Constant 3],Constant 5]])
 -- "(x (2 (add 2 3) 5))"
@@ -448,22 +455,9 @@ define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [C
 -- >>> define [Symbol "xs",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]] (Env [])
 -- (Symbol "",Env [("xs",Combination [Constant 1,Constant 2,Constant 3])])
 
--- >>> second [Combination [Constant 1,Constant 2,Constant 3]] (Env [])
--- (Combination [Constant 2,Constant 3],Env [])
-
 -- >>> map printEval (eval [Combination [Symbol "define",Symbol "xs",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]],Combination [Symbol "snd",Symbol "xs"]] (Env []))
 -- ["","(2 3)"]
 
--- >>> map printEval (eval [] (Env []))
--- ["","#t"]
-
--- >>> runParser program
-
--- >>> runParser program "(list? xs)"
--- [([Combination [Symbol "list?",Symbol "xs"]],"")]
-
--- >>> assign [Symbol "x", Symbol "y"] [Constant 3, Constant 4]
--- [("x",Constant 3),("y",Constant 4)]
 
 
 lambda :: [Expr] -> [Expr] -> Environment -> (Expr, Environment) -- when you evaluate a lambda/macro, check that the AST node in the args position has the correct form
