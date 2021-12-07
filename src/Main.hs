@@ -9,7 +9,6 @@ import Bird.Printer
 import Data.List
 import Data.Char
 import Data.Bits (Bits(xor))
-import Data.Maybe
 import Control.Concurrent (yield)
 
 data Expr = Boolean Bool
@@ -162,7 +161,7 @@ goEval s  = do
             --     env = Env []
               --   result = map (\x -> eval x env) metaAST
 
-        Left metaAST -> mapM_ putStrLn (map printEval (filter filterBlanks (eval metaAST env)))
+        Left metaAST -> mapM_ putStrLn (map printEval (filter filterBlanks (eval metaAST env 0)))
             where
                 env = Env []
                 filterBlanks x = case x of
@@ -244,23 +243,23 @@ eval (Combination (Combination [Symbol "lambda", args, body] : values)) env = la
 eval (Combination x) env =  combinationEval x env
 --}
 
-eval :: [Expr] -> Environment -> [Expr]
-eval [] env = []
-eval ((Boolean b) : xs) env = Boolean b : eval xs env
-eval ((Constant n) : xs) env = Constant n : eval xs env
-eval ((Symbol s) : xs) env = Symbol s : eval xs env
-eval ((Combination x) : xs) env = (resultExpr result) : (eval xs (resultEnv result))
+eval :: [Expr] -> Environment -> Int -> [Expr]
+eval [] env l = []
+eval ((Boolean b) : xs) env l = Boolean b : eval xs env l
+eval ((Constant n) : xs) env l = Constant n : eval xs env l
+eval ((Symbol s) : xs) env l = Symbol s : eval xs env l
+eval ((Combination x) : xs) env l = (resultExpr result) : (eval xs (resultEnv result) l)
     where
-        result = combinationEval x env
+        result = combinationEval x env l
         resultExpr :: (Expr, Environment) -> Expr
         resultExpr (expr, env) = expr 
         resultEnv :: (Expr, Environment) -> Environment
         resultEnv (expr, env) = env
 
-combinationEval :: [Expr] -> Environment -> (Expr, Environment) -- currently doesn't report errors?
-combinationEval [Constant x] env = (Constant x, env)
-combinationEval [Combination x] env = combinationEval x env
-combinationEval ((Symbol s) : xs) env
+combinationEval :: [Expr] -> Environment -> Int -> (Expr, Environment) -- currently doesn't report errors?
+combinationEval [Constant x] env l = (Constant x, env)
+combinationEval [Combination x] env l = combinationEval x env l
+combinationEval ((Symbol s) : xs) env l
     --intrinsics
     |  s == "eq?" = equality xs env
     | s == "add" = add xs env
@@ -275,12 +274,12 @@ combinationEval ((Symbol s) : xs) env
     | s == "list?" = list xs env
     | s == "function?" = function xs env
     -- special forms
-    | s == "quote" = quote xs env 1
-    | s == "splice" = splice xs env
+    | s == "quote" = quote xs env l
+    | s == "splice" = splice xs env l
     | s == "if" = conditional xs env
     -- s == "lambda" = lambda xs env
     | s == "define" = define xs env
-    | otherwise = combinationEval ((envLookup env (s)) : xs) env
+    | otherwise = combinationEval ((envLookup env (s)) : xs) env l
 
 firstExpr :: [Expr] -> Expr
 firstExpr (x:xs) = x
@@ -302,29 +301,29 @@ equality [Combination (Symbol "add":xs), Constant e2] env = equality [getExpr (a
 add, sub, mult, divide :: [Expr] -> Environment -> (Expr, Environment)
 
 add [Constant e1, Constant e2] env = (Constant (e1 + e2), env)
-add [Constant e1, Combination e2] env = add [Constant e1,  firstExpr (eval [Combination e2] env)] env
-add [Combination e1, Constant e2] env = add [firstExpr (eval [Combination e1] env), Constant e2] env
-add [Combination e1, Combination e2] env = add [firstExpr (eval [Combination e1] env), firstExpr (eval [Combination e2] env)] env
+add [Constant e1, Combination e2] env = add [Constant e1,  firstExpr (eval [Combination e2] env 0)] env
+add [Combination e1, Constant e2] env = add [firstExpr (eval [Combination e1] env 0), Constant e2] env
+add [Combination e1, Combination e2] env = add [firstExpr (eval [Combination e1] env 0), firstExpr (eval [Combination e2] env 0)] env
 add [Symbol x, Symbol y] env = add [envLookup env x, envLookup env y] env
 
 -- add [Combination x] env = eval (Combination x)
 
 sub [Constant e1, Constant e2] env = (Constant (e1 - e2), env)
 sub [Combination ((Symbol x):xs)] env = sub xs env
-sub [Constant e1, Combination e2] env = sub [Constant e1, firstExpr (eval [Combination e2] env)] env
-sub [Combination e1, Constant e2] env = sub [firstExpr (eval [Combination e1] env), Constant e2] env
-sub [Combination e1, Combination e2] env = sub [firstExpr (eval [Combination e1] env), firstExpr (eval [Combination e2] env)] env
+sub [Constant e1, Combination e2] env = sub [Constant e1, firstExpr (eval [Combination e2] env 0)] env
+sub [Combination e1, Constant e2] env = sub [firstExpr (eval [Combination e1] env 0), Constant e2] env
+sub [Combination e1, Combination e2] env = sub [firstExpr (eval [Combination e1] env 0), firstExpr (eval [Combination e2] env 0)] env
 
 
 mult [Constant e1, Constant e2] env = (Constant (e1 * e2), env)
 divide [Constant e1, Constant e2] env = (Constant (e1 `div` e2), env)
 
 cons :: [Expr] -> Environment -> (Expr, Environment)
-cons [x, Symbol "nil"] env = (Combination [firstExpr (eval [x] env)], env)
-cons [x, Combination (Symbol "cons" : xs)] env = cons [firstExpr (eval [x] env), getExpr (cons xs env)] env
-cons [x, Combination xs] env = (Combination (firstExpr(eval [x] env) : xs), env)
-cons [x, Dot ys y] env = (Dot (firstExpr(eval [x] env) : ys) y, env)
-cons [x, y] env = (Dot [firstExpr(eval [x] env)] y, env)
+cons [x, Symbol "nil"] env = (Combination [firstExpr (eval [x] env 0)], env)
+cons [x, Combination (Symbol "cons" : xs)] env = cons [firstExpr (eval [x] env 0), getExpr (cons xs env)] env
+cons [x, Combination xs] env = (Combination (firstExpr(eval [x] env 0) : xs), env)
+cons [x, Dot ys y] env = (Dot (firstExpr(eval [x] env 0) : ys) y, env)
+cons [x, y] env = (Dot [firstExpr(eval [x] env 0)] y, env)
 cons _ env = (Symbol "Error", env)
 
 
@@ -392,30 +391,40 @@ quote :: [Expr] -> Environment -> Int -> (Expr, Environment)
 quote [Constant x] env n = (Constant x, env)
 quote [Symbol s] env 0 =  (Symbol s, env)
 quote [Symbol s] env n = (Symbol s, env)
-quote [Combination xs] env 0 = (firstExpr (eval xs env), env)
+quote [Combination xs] env 0 = (firstExpr (eval [Combination xs] env 0), env)
 quote [Combination [Symbol "splice", x]] env n = quote [x] env (n - 1) 
 quote [Combination [Symbol "quote", x]] env n = quote [x] env (n + 1)
-quote [Combination (x:xs)] env n = let (ex, en) = (quote xs env n) in (Combination [x, ex], env)
--- quote [Combination xs] env = (Combination (map checkSplice xs), env)
---    where
---        checkSplice (Combination [Symbol "splice", x]) = firstExpr(eval [x] env)
---        checkSplice x = x
+quote [Combination (x:xs)] env n = let ex = eval xs env n in (Combination (x:ex), env)
 quote [Dot xs x] env n = (Dot xs x, env)
 
 -- >>> runParser program "'(x '(2 $(add 2 3) $$(add 2 3)))"
 -- [([Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2,Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]]]]]]]],"")]
 
 
--- >>> quote [Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2, Constant 3]]]] (Env []) 1
--- (Combination [Symbol "x",Combination [Constant 2,Constant 3]],Env [])
+-- >>> quote [Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2,Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]]]]]]] (Env []) 1
+-- (Combination [Symbol "x",Combination [Constant 2,Combination [Symbol "add",Constant 2,Constant 3],Constant 5]],Env [])
 -- 
 
+-- >>> printEval (Combination [Symbol "x",Combination [Constant 2,Combination [Symbol "add",Constant 2,Constant 3],Constant 5]])
+-- "(x (2 (add 2 3) 5))"
 
-splice :: [Expr] -> Environment -> (Expr, Environment)
-splice [Constant x] env = (Constant x, env)
-splice [Symbol s] env = (Symbol s, env)
--- splice [Combination [Symbol "quote", x]] = eval x
-splice [Combination xs] env = (firstExpr (eval [Combination xs] env), env)
+-- >>> eval [Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2,Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]]]]]]]] (Env [])
+
+
+-- >>> eval [Symbol "add",Constant 2,Constant 3] (Env []) 
+-- [Symbol "add",Constant 2,Constant 3]
+
+
+splice :: [Expr] -> Environment -> Int -> (Expr, Environment)
+splice [Constant x] env n = (Constant x, env)
+splice [Symbol s] env 0 = (Symbol s, env)
+splice [Symbol s] env n = (Symbol s, env)
+splice [Combination xs] env 0 = (firstExpr (eval [Combination xs] env 0), env)
+splice [Combination [Symbol "splice", x]] env n = splice [x] env (n - 1) 
+splice [Combination [Symbol "quote", x]] env n = splice [x] env (n + 1)
+splice [Combination (x:xs)] env n = let ex = eval xs env n in (Combination (x:ex), env)
+splice [Dot xs x] env n = (Dot xs x, env)
+
 
 
 conditional :: [Expr] -> Environment -> (Expr, Environment)
@@ -425,7 +434,7 @@ conditional [Boolean False, x, y] env = (y, env)
 define :: [Expr] -> Environment -> (Expr, Environment)
 define [Symbol var, Constant value] env = envAdd env (var, Constant value)
 define [Symbol var, Symbol value] env = envAdd env (var, Symbol value)
-define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [Combination value] env))
+define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [Combination value] env 0))
 
 
 -- >>> runParser program "(define xs \n (cons 1 (cons 2 (cons 3 nil)))) \n (fst xs)"
@@ -448,12 +457,6 @@ define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [C
 -- >>> runParser program "(list? xs)"
 -- [([Combination [Symbol "list?",Symbol "xs"]],"")]
 
-
-
-assign :: [Expr] -> [Expr] -> [(String, Expr)]
-assign [] [] = []
-assign (Symbol x:xs) (n:ns) = (x, n) : assign xs ns
-
 -- >>> assign [Symbol "x", Symbol "y"] [Constant 3, Constant 4]
 -- [("x",Constant 3),("y",Constant 4)]
 
@@ -461,7 +464,9 @@ assign (Symbol x:xs) (n:ns) = (x, n) : assign xs ns
 lambda :: [Expr] -> [Expr] -> Environment -> (Expr, Environment) -- when you evaluate a lambda/macro, check that the AST node in the args position has the correct form
 lambda [Combination arg, body] values (Env es) = (envLookup2 (Env (es ++ assign arg values)) body, Env (es ++ assign arg values))
 
-
+assign :: [Expr] -> [Expr] -> [(String, Expr)]
+assign [] [] = []
+assign (Symbol x:xs) (n:ns) = (x, n) : assign xs ns
 
 -- >>> runParser program "((lambda (x y) x) 3 4)"
 -- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 3,Constant 4]],"")]
