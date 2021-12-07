@@ -342,6 +342,7 @@ second [Combination x] env = a x
         a [Boolean e1, Boolean e2] = (Boolean e2, env)
         a [Symbol "quote", Combination y] = second [Combination y] env
         a (e1 : e2) = (Combination e2, env)
+second [Symbol var] env = second [envLookup env var] env
 
 number [Constant e] env = (Boolean True, env)
 number [Boolean e] env = (Boolean False, env)
@@ -406,6 +407,7 @@ quote [Dot xs x] env n = (Dot xs x, env)
 
 
 -- >>> quote [Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2, Constant 3]]]] (Env []) 1
+-- (Combination [Symbol "x",Combination [Constant 2,Constant 3]],Env [])
 -- 
 
 
@@ -435,8 +437,8 @@ define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [C
 -- >>> second [Combination [Constant 1,Constant 2,Constant 3]] (Env [])
 -- (Combination [Constant 2,Constant 3],Env [])
 
--- >>> map printEval (eval [Combination [Symbol "define",Symbol "xs",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]],Combination [Symbol "fst",Symbol "xs"]] (Env []))
--- ["","1"]
+-- >>> map printEval (eval [Combination [Symbol "define",Symbol "xs",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]],Combination [Symbol "snd",Symbol "xs"]] (Env []))
+-- ["","(2 3)"]
 
 -- >>> map printEval (eval [] (Env []))
 -- ["","#t"]
@@ -485,7 +487,9 @@ lambda [Combination arg, body] values (Env es) = (envLookup2 (Env (es ++ assign 
 -- [([Combination [Symbol "quote",Combination [Constant 1,Constant 2,Combination [Symbol "splice",Constant 3]]]],"")]
 
 -- >>> quote [Combination [Constant 1,Constant 2,Combination [Symbol "splice",Constant 3]]]
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(309,9)-(310,40): Non-exhaustive patterns in function multiquote
+-- No instance for (Show (Environment -> Int -> (Expr, Environment)))
+--   arising from a use of ‘evalPrint’
+--   (maybe you haven't applied a function to enough arguments?)
 
 
 -- stuff that might help with library------------------
