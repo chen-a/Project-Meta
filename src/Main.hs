@@ -331,13 +331,15 @@ first, second, number :: [Expr] -> Environment -> (Expr, Environment)
 first [Combination x] env = a x
     where
         a [Symbol "cons", e1, e2] = (e1, env)
-        a [Constant e1, Constant e2] = (Constant e1, env)
         a [Symbol "quote", Combination y] = first [Combination y] env
+        a [e1, e2] = (e1, env)
 
 second [Combination x] env = a x
     where
         a [Symbol "cons", e1, e2] = (e2, env)
         a [Boolean e1, Boolean e2] = (Boolean e2, env)
+        a [Symbol "quote", Combination y] = second [Combination y] env
+        a [e1, e2] = (Combination [e2], env)
 
 number [Constant e] env = (Boolean True, env)
 number [Boolean e] env = (Boolean False, env)
@@ -375,11 +377,12 @@ function [Combination e] env = (Boolean False, env)
 quote :: [Expr] -> Environment -> (Expr, Environment)
 quote [Constant x] env = (Constant x, env)
 quote [Symbol s] env = (Symbol s, env)
+quote [Combination xs] env = (Combination xs, env)
 -- quote [Combination [Symbol "splice", x]] = eval x
-quote [Combination xs] env = (Combination (map checkSplice xs), env)
-    where
-        checkSplice (Combination [Symbol "splice", x]) = firstExpr(eval [x] env)
-        checkSplice x = x
+-- quote [Combination xs] env = (Combination (map checkSplice xs), env)
+--    where
+--        checkSplice (Combination [Symbol "splice", x]) = firstExpr(eval [x] env)
+--        checkSplice x = x
 quote [Dot xs x] env = (Dot xs x, env)
 
 -- >>> quote [Combination [Constant 1, Constant 2]]
@@ -399,26 +402,25 @@ conditional [Boolean False, x, y] env = (y, env)
 define :: [Expr] -> Environment -> (Expr, Environment)
 define [Symbol var, value] env = envAdd env (var, value)
 
--- >>> runParser program "(first '(1 2))"
--- [([Combination [Symbol "first",Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]],"")]
+-- >>> runParser program "(define first fst) \n (define second snd) \n (second '(1 2))"
+-- [([Combination [Symbol "define",Symbol "first",Symbol "fst"],Combination [Symbol "define",Symbol "second",Symbol "snd"],Combination [Symbol "second",Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]],"")]
 
 -- >>> first [Combination [Symbol "quote",Combination [Constant 1,Constant 2]]] (Env[])
 -- (Constant 1,Env [])
 
--- >>> eval [Combination [Symbol "define",Symbol "x",Constant 1],Combination [Symbol "define",Symbol "y",Constant 1],Combination [Symbol "add",Symbol "x",Symbol "y"]] (Env [])
--- [Symbol "",Symbol "",Constant 2]
+-- >>> map printEval ( eval [Combination [Symbol "define",Symbol "first",Symbol "fst"],Combination [Symbol "define",Symbol "second",Symbol "snd"],Combination [Symbol "second",Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]] (Env []))
+-- ["","","(2)"]
 
--- >>> eval [Combination [Symbol "define",Symbol "x",Constant 1]] (Env [])
--- [Symbol ""]
 
 -- >>> eval [Combination [Symbol "first",Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]] (Env [("first",Symbol "fst"),("second",Symbol "snd")])
 -- [Constant 1]
 
--- >>> add [Symbol "x",Symbol "y"] (Env [("y",Constant 1),("x",Constant 1)])
--- (Constant 2,Env [("y",Constant 1),("x",Constant 1)])
+-- >>> second [Combination [Symbol "quote",Combination [Constant 1,Constant 2]]] (Env [("first",Symbol "fst"),("second",Symbol "snd")])
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(339,9)-(341,70): Non-exhaustive patterns in function a
 
--- >>> define [Symbol "first",Symbol "fst"] (Env[])
--- (Symbol "",Env [("first",Symbol "fst")])
+
+-- >>> runParser program "(second '(1 2))"
+-- [([Combination [Symbol "second",Combination [Symbol "quote",Combination [Constant 1,Constant 2]]]],"")]
 
 
 
