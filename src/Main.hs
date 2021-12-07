@@ -303,7 +303,7 @@ add [Constant e1, Constant e2] env = (Constant (e1 + e2), env)
 add [Constant e1, Combination e2] env = add [Constant e1,  firstExpr (eval [Combination e2] env)] env
 add [Combination e1, Constant e2] env = add [firstExpr (eval [Combination e1] env), Constant e2] env
 add [Combination e1, Combination e2] env = add [firstExpr (eval [Combination e1] env), firstExpr (eval [Combination e2] env)] env
-add [Symbol e1, Symbol e2] env = undefined
+add [Symbol x, Symbol y] env = add [envLookup env x, envLookup env y] env
 
 -- add [Combination x] env = eval (Combination x)
 
@@ -397,6 +397,25 @@ conditional [Boolean False, x, y] env = (y, env)
 
 define :: [Expr] -> Environment -> (Expr, Environment)
 define [Symbol var, value] env = envAdd env (var, value)
+
+-- >>> runParser program "(define x 1) \n (define y 1) \n (add x y)"
+-- [([Combination [Symbol "define",Symbol "x",Constant 1],Combination [Symbol "define",Symbol "y",Constant 1],Combination [Symbol "add",Symbol "x",Symbol "y"]],"")]
+
+-- >>> eval [Combination [Symbol "define",Symbol "x",Constant 1],Combination [Symbol "define",Symbol "y",Constant 1],Combination [Symbol "add",Symbol "x",Symbol "y"]] (Env [])
+-- [Symbol "",Symbol "",Constant 2]
+
+-- >>> eval [Combination [Symbol "define",Symbol "x",Constant 1]] (Env [])
+-- [Symbol ""]
+
+-- >>> eval [Combination [Symbol "add",Symbol "x",Symbol "y"]] (Env [("y",Constant 1),("x",Constant 1)])
+-- [Constant 2]
+
+-- >>> add [Symbol "x",Symbol "y"] (Env [("y",Constant 1),("x",Constant 1)])
+-- (Constant 2,Env [("y",Constant 1),("x",Constant 1)])
+
+-- >>> define [Symbol "x",Constant 10] (Env[])
+-- (Symbol "",Env [("x",Constant 10)])
+
 
 
 assign :: [Expr] -> [Expr] -> [(String, Expr)]
