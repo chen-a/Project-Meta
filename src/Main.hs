@@ -157,10 +157,10 @@ parseMeta s =
 goEval s  = do
      let result = parseMeta s
      case result of
-        -- Left metaAST -> mapM_ putStrLn (map printEval (map getExpr result))
-           --  where
-             --    env = Env []
-               --  result = map (\x -> eval x env) metaAST
+        --Left metaAST -> mapM_ putStrLn (map printEval (map getExpr result))
+          --   where
+            --     env = Env []
+              --   result = map (\x -> eval x env) metaAST
 
         Left metaAST -> mapM_ putStrLn (map printEval (filter filterBlanks (eval metaAST env)))
             where
@@ -313,6 +313,7 @@ cons [x, Combination xs] env = (Combination (getExpr(eval x env) : xs), env)
 cons [x, Dot ys y] env = (Dot (getExpr (eval x env) : ys) y, env)
 cons [x, y] env = (Dot [getExpr (eval x env)] y, env)
 cons _ env = (Symbol "Error", env)
+
 
 first, second, number :: [Expr] -> Environment -> (Expr, Environment)
 first [Combination x] env = a x
@@ -503,10 +504,32 @@ divide [Constant e1, Constant e2] env = [Constant (e1 `div` e2)]
 cons :: [Expr] -> Environment -> [Expr]
 cons [x, Symbol "nil"] env = [Combination (eval [x] env)]
 cons [x, Combination (Symbol "cons" : xs)] env = cons ((eval [x] env) ++ (cons xs env)) env
-cons [x, Combination xs] env = (Combination (eval [x] env) : xs)
+cons [x, Combination xs] env = [Combination ((eval [x] env) ++ xs)]
 cons [x, Dot ys y] env = [Dot ((eval [x] env) ++ ys) y]
 cons [x, y] env = [Dot (eval [x] env) y]
 cons _ env = [Symbol "Error"]
+
+-- >>> runParser program "(cons 1 (cons 2 (cons 3 (cons 4 nil))))"
+-- [([Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]]]],"")]
+
+-- >>> cons [Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]]] (Env [])
+-- [Dot [Constant 1] (Symbol "Error")]
+
+-- >>> runParser program "cons 2 (cons 3 (cons 4 nil)))"
+-- [([Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]],")")]
+
+-- >>> cons [Constant 2,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]]] (Env [])
+-- [Combination [Constant 2,Constant 3,Constant 4]]
+
+-- >>> cons [Constant 3,Combination [Symbol "cons",Constant 4,Symbol "nil"]] (Env [])
+-- [Combination [Constant 3,Constant 4]]
+
+-- >>> cons [Constant 4,Symbol "nil"] (Env [])
+-- [Combination [Constant 4]]
+
+-- >>> eval [Constant 4] (Env [])
+-- [Constant 4]
+
 
 first, second, rnumber :: [Expr] -> Environment -> [Expr]
 first [Combination x] env = a x
@@ -556,12 +579,9 @@ quote [Combination xs] env = [Combination (map checkSplice xs)]
     where
         checkSplice (Combination [Symbol "splice", x]) = getFirst (eval [x] env)
         checkSplice x = x
-       -- getFirst [x, xs] = x
+        getFirst [x, xs] = x
+        getFirst [x] = x
 quote [Dot xs x] env = [Dot xs x]
-
-getFirst :: [Expr] -> Expr
-getFirst [x, xs] = x
-getFirst [x] = x
 
 splice :: [Expr] -> Environment -> [Expr]
 splice [Constant x] env = [Constant x]
@@ -581,10 +601,5 @@ splice [Combination xs] env = eval [Combination xs] env
 conditional :: [Expr] -> Environment -> [Expr]
 conditional [Boolean True, x, y] env = [x]
 conditional [Boolean False, x, y] env = [y]
-
-{--
-
-
-
 
 --}
