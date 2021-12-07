@@ -183,16 +183,11 @@ goEval s  = do
 -- >>> eval [Boolean True] (Env [("k", Constant 5)])
 -- [Boolean True]
  
-
-define :: [Expr] -> Environment -> (Expr, Environment)
-define [Symbol var, value] env = (Symbol "", envAdd env (var, value))
-
 newtype Environment = Env [(String, Expr)] deriving Show
 
-envLookup :: Environment -> String -> Maybe Expr
-envLookup (Env []) s = Nothing
+envLookup :: Environment -> String -> Expr
 envLookup (Env ((vname,value) : rest)) s =
-    if vname == s then Just value
+    if vname == s then value
                   else envLookup (Env rest) s
 
 envLookup2 :: Environment -> Expr -> Expr
@@ -201,8 +196,8 @@ envLookup2 (Env ((vname,value) : rest)) (Symbol s) =
                   else envLookup2 (Env rest) (Symbol s)
 
 
-envAdd :: Environment -> (String, Expr) -> Environment
-envAdd (Env ps) p = Env (p : ps)
+envAdd :: Environment -> (String, Expr) -> (Environment, Expr)
+envAdd (Env ps) p = (Env (p : ps), Symbol "")
 
 envAddMult :: Environment -> [(String, Expr)] -> Environment
 envAddMult (Env ps) [ts] = Env (ts:ps) 
@@ -468,7 +463,7 @@ combinationEval ((Symbol s) : xs) env
     | s == "splice" = splice xs env
     | s == "if" = conditional xs env
     -- | s == "lambda" = rlambda xs env
-    -- | s == "define" = rdefine xs env
+    | s == "define" = define xs env
 
 
 equality :: [Expr] -> Environment -> [Expr]
@@ -488,6 +483,7 @@ add [Constant e1, Constant e2] env = [Constant (e1 + e2)]
 add [Constant e1, Combination e2] env = add (Constant e1 : (eval [Combination e2] env)) env
 add [Combination e1, Constant e2] env = add  ((eval [Combination e1] env) ++ [Constant e2]) env
 add [Combination e1, Combination e2] env = add  ((eval [Combination e1] env) ++ (eval [Combination e2] env)) env
+add [Symbol x, Symbol y] env = add [envLookup env x, envLookup env y] env
 
 -- add [Combination x] env = eval (Combination x)
 
@@ -601,5 +597,28 @@ splice [Combination xs] env = eval [Combination xs] env
 conditional :: [Expr] -> Environment -> [Expr]
 conditional [Boolean True, x, y] env = [x]
 conditional [Boolean False, x, y] env = [y]
+
+define :: [Expr] -> Environment -> [Expr]
+define [Symbol var, value] env = do
+    let (x, y) = envAdd env (var, value)
+    return y
+
+defineTest :: [Expr] -> Environment -> (Environment, Expr)
+defineTest [Symbol var, value] env = envAdd env (var, value)
+
+-- >>> runParser program "(add x y)"
+-- [([Combination [Symbol "add",Symbol "x",Symbol "y"]],"")]
+
+-- >>> add [Symbol "x",Symbol "y"] (Env [("y",Constant 1),("x",Constant 1)])
+-- [Constant 2]
+
+-- >>> define [Symbol "x",Constant 10] (Env[])
+-- [Symbol ""]
+
+-- >>> defineTest [Symbol "x",Constant 1] (Env[])
+-- (Env [("x",Constant 1)],Symbol "")
+
+-- >>> defineTest [Symbol "y",Constant 1] (Env[("x",Constant 1)])
+-- (Env [("y",Constant 1),("x",Constant 1)],Symbol "")
 
 --}
