@@ -274,12 +274,12 @@ combinationEval ((Symbol s) : xs) env l
     | s == "list?" = list xs env
     | s == "function?" = function xs env
     -- special forms
-    | s == "quote" = quote xs env l
-    | s == "splice" = splice xs env l
+    | s == "quote" = quote xs env (l+1)
+    | s == "splice" = splice xs env (l-1)
     | s == "if" = conditional xs env
     -- s == "lambda" = lambda xs env
     | s == "define" = define xs env
-    | otherwise = combinationEval ((envLookup env (s)) : xs) env l
+    | otherwise = combinationEval ((envLookup env s) : xs) env l
 
 firstExpr :: [Expr] -> Expr
 firstExpr (x:xs) = x
@@ -408,7 +408,12 @@ quote [Dot xs x] env n = (Dot xs x, env)
 -- >>> printEval (Combination [Symbol "x",Combination [Constant 2,Combination [Symbol "add",Constant 2,Constant 3],Constant 5]])
 -- "(x (2 (add 2 3) 5))"
 
--- >>> eval [Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2,Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]]]]]]]] (Env [])
+-- >>> map printEval (eval [Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2,Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]]]]]]]] (Env []) 0)
+-- ["(x (2 (add 2 3) 5))"]
+
+-- >>> eval [Combination [Symbol "quote",Combination [Symbol "x",Combination [Symbol "quote",Combination [Constant 2,Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]],Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "add",Constant 2,Constant 3]]]]]]]] (Env []) 0
+-- [Combination [Symbol "x",Combination [Constant 2,Combination [Symbol "add",Constant 2,Constant 3],Constant 5]]]
+
 
 
 -- >>> eval [Symbol "add",Constant 2,Constant 3] (Env []) 
