@@ -498,16 +498,21 @@ eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv 
 -- >>> eval2 [Combination [Combination [Symbol "lambda",Combination [Symbol "xs"],Symbol "xs"],Constant 5]] (Env []) 1
 -- [Constant 5]
 
--- >>> runParser program "((lambda () 1)) \n (add 3 4)"
--- [([Combination [Combination [Symbol "lambda",Combination [],Constant 1]],Combination [Symbol "add",Constant 3,Constant 4]],"")]
 
--- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [],Constant 1]],Combination [Symbol "add",Constant 3,Constant 4]] (Env []) 1)
--- ["1","7"]
 
--- arg = [Combination [Symbol "lambda",Combination [Symbol "x"],Constant 1],Constant 2]
--- xs = [Constant 2]
--- variables = [Symbol "x"]
--- function = [Constant 1]
+-- lambdas1.meta
+-- >>> runParser program "((lambda () 1)) \n ((lambda (x y) x) 3 4)  \n ((lambda (x y) y) 3 4)  \n ((lambda (xs) xs) 5)"
+-- [([Combination [Combination [Symbol "lambda",Combination [],Constant 1]],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 3,Constant 4],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 3,Constant 4],Combination [Combination [Symbol "lambda",Combination [Symbol "xs"],Symbol "xs"],Constant 5]],"")]
+
+-- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [],Constant 1]],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 3,Constant 4],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 3,Constant 4],Combination [Combination [Symbol "lambda",Combination [Symbol "xs"],Symbol "xs"],Constant 5]] (Env []) 1)
+-- ["1","3","4","5"]
+
+-- lambdas2.meta
+-- >>> runParser program "((lambda (x y) (add x y)) 1 2)   "
+-- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2]],"")]
+
+-- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2]] (Env []) 1)
+-- ProgressCancelledException
 
 -- stuff that might help with library------------------
 -- add [] = 0
