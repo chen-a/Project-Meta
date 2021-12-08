@@ -22,7 +22,7 @@
   (lambda (f z lst)
     (if (null? lst)
         z
-        (foldr f (f z (fst lst)) (snd lst)))))
+        (foldl f (f z (fst lst)) (snd lst)))))
 
 (define map
   (lambda (f lst)
