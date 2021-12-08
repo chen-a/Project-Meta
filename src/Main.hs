@@ -310,7 +310,8 @@ add [Constant e1, Constant e2] env = (Constant (e1 + e2), env)
 add [Constant e1, Combination e2] env = add [Constant e1,  firstExpr (eval [Combination e2] env 0)] env
 add [Combination e1, Constant e2] env = add [firstExpr (eval [Combination e1] env 0), Constant e2] env
 add [Combination e1, Combination e2] env = add [firstExpr (eval [Combination e1] env 0), firstExpr (eval [Combination e2] env 0)] env
-add [Symbol x, Symbol y] env = add [envLookup env x, envLookup env y] env
+add [Symbol e1, Constant e2] env = add [envLookup env e1, Constant e2] env
+add [Symbol e1, Symbol e2] env = add [envLookup env e1, envLookup env e2] env
 
 -- add [Combination x] env = eval (Combination x)
 
@@ -516,10 +517,10 @@ eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv 
 -- ["1","3","4","5"]
 
 -- lambdas2.meta
--- >>> runParser program "((lambda (x y) (add x y)) 1 2)   "
--- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2]],"")]
+-- >>> runParser program "((lambda (x y z) (add x y)) 1 2 3)"
+-- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2,Constant 3]],"")]
 
--- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2]] (Env []) 1)
+-- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2,Constant 3]] (Env []) 1)
 -- ["3"]
 
 -- stuff that might help with library------------------
