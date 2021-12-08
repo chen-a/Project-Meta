@@ -460,7 +460,15 @@ lambda [Combination args] env = ((evalLambda (getVars newLambda) (getBody newLam
      getValues (Lambda args body values) = values
 
 createLambda :: [Expr] -> Environment -> Expr -- creates and returns a lambda expression type from parsed line
-createLambda (Combination (Symbol "lambda" : Combination vars : body) : values) env = Lambda vars (firstExpr (eval body env 1)) values
+createLambda (Combination (Symbol "lambda" : Combination vars : body) : values) env = Lambda vars (firstExpr body) values --(firstExpr (eval body env 1))
+
+createBody (Combination (Symbol "lambda" : Combination vars : body) : values) env = firstExpr body
+
+-- >>> createBody [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2] (Env [])
+-- Combination [Symbol "add",Symbol "x",Symbol "y"]
+
+-- >>> eval [Combination [Symbol "add",Symbol "x",Symbol "y"]] (Env []) 1
+
 
 -- >>> firstExpr (eval [Symbol "x"] (Env []) 1)
 -- Symbol "x"
@@ -512,7 +520,7 @@ eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv 
 -- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2]],"")]
 
 -- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2]] (Env []) 1)
--- ProgressCancelledException
+-- ["3"]
 
 -- stuff that might help with library------------------
 -- add [] = 0
