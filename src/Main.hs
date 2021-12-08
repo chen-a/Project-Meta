@@ -16,7 +16,7 @@ data Expr = Boolean Bool
     | Symbol String
     | Combination [Expr]
     | Dot [Expr] Expr
-    | Lambda [Expr] Expr
+    | Lambda [Expr] Expr [Expr]
     deriving Show
 
 
@@ -205,6 +205,9 @@ envAddMult (Env ps) [ts] = Env (ts:ps)
 getExpr :: (Expr, Environment) -> Expr
 getExpr (expr, env) = expr
 
+getEnv :: (Expr, Environment) -> Environment
+getEnv (expr, env) = env
+
 test_env1, test_env2 :: Environment
 test_env1 = Env [("v2", Constant 88), ("v2", Constant 23), ("v1", Constant 10)]
 test_env2 = Env [("v2", Constant 8888), ("v2", Constant 23), ("v1", Constant 10)]
@@ -251,10 +254,12 @@ eval ((Symbol s) : xs) env l = Symbol s : eval xs env l
 eval ((Combination x) : xs) env l = (resultExpr result) : (eval xs (resultEnv result) l)
     where
         result = combinationEval x env l
-        resultExpr :: (Expr, Environment) -> Expr
-        resultExpr (expr, env) = expr
-        resultEnv :: (Expr, Environment) -> Environment
-        resultEnv (expr, env) = env
+
+resultExpr :: (Expr, Environment) -> Expr
+resultExpr (expr, env) = expr
+
+resultEnv :: (Expr, Environment) -> Environment
+resultEnv (expr, env) = env
 
 combinationEval :: [Expr] -> Environment -> Int -> (Expr, Environment) -- currently doesn't report errors?
 combinationEval [Constant x] env l = (Constant x, env)
@@ -448,19 +453,33 @@ define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [C
 
 -- lambda :: [Expr] -> Environment -> Expr -- when you evaluate a lambda/macro, check that the AST node in the args position has the correct form
 lambda :: [Expr] -> Environment -> (Expr, Environment)
-lambda [Combination args] env = return ((getBody newLambda), env)
+lambda [Combination args] env = return ((evalLambda (getVars newLambda) (getBody newLambda) (getValues newLambda)), env)
     where
      newLambda = createLambda args env
-     getBody (Lambda args body) = body
+     getBody (Lambda vars body values) = body
+     getVars (Lambda vars body values) = vars
+     getValues (Lambda args body values) = values
 
-createLambda :: [Expr] -> Environment -> Expr
-createLambda (Combination (Symbol "lambda" : Combination vars : body) : values) env = Lambda vars (firstExpr (eval body env 1))
+createLambda :: [Expr] -> Environment -> Expr -- creates and returns a lambda expression type from parsed line
+createLambda (Combination (Symbol "lambda" : Combination vars : body) : values) env = Lambda vars (firstExpr (eval body env 1)) values
 
-evalLambda :: [Expr] -> Expr -> [Expr] -> Environment -> Expr
-evalLambda args body xs env = undefined
+evalLambda :: [Expr] -> Expr -> [Expr] -> Environment -> Expr -- returns final output
+evalLambda vars body xs env = firstExpr (eval [body] newEnv 1)
+    where
+        newEnv = defineLambda vars xs env
+
+
+defineLambda :: [Expr] -> [Expr] -> Environment -> Environment -- returns environment after it defines all arguments with their values
+defineLambda [] [] env = env
+defineLambda [] (v : vs) env = getEnv (envAdd env ("neveraccessthis", Combination (v:vs))) -- error?
+defineLambda [Symbol e] (v : vs) env = getEnv (envAdd env (e, v))
+defineLambda (Symbol e: xs) (v : vs) env = defineLambda xs vs (getEnv (envAdd env (e, v)))
+
+-- >>> defineLambda [] [] (Env [("test2",Constant 5),("test",Constant 5)])
+-- Env [("test2",Constant 5),("test",Constant 5)]
 
 -- >>> createLambda [Combination [Symbol "lambda",Combination [Symbol "x"],Constant 1]] (Env [])
--- Lambda [Symbol "x"] (Constant 1)
+-- Lambda [Symbol "x"] (Constant 1) []
 
 -- >>> firstExpr (eval [Constant 1] (Env []) 1)
 -- Constant 1
