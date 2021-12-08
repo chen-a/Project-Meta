@@ -251,7 +251,7 @@ eval [] env l = []
 eval ((Boolean b) : xs) env l = Boolean b : eval xs env l
 eval ((Constant n) : xs) env l = Constant n : eval xs env l
 eval ((Symbol s) : xs) env l = Symbol s : eval xs env l
-eval [Combination (Combination (Symbol "lambda" : xs) : ys)] env 1 = [resultExpr (lambda [Combination (Combination (Symbol "lambda" : xs) : ys)] env)]
+eval  ((Combination (Combination (Symbol "lambda" : xs) : ys)) : rest) env 1 = (resultExpr (lambda [Combination (Combination (Symbol "lambda" : xs) : ys)] env)) : (eval rest env 1)
 eval ((Combination x) : xs) env l = (resultExpr result) : (eval xs (resultEnv result) l)
     where
         result = combinationEval x env l
@@ -498,8 +498,11 @@ eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv 
 -- >>> eval2 [Combination [Combination [Symbol "lambda",Combination [Symbol "xs"],Symbol "xs"],Constant 5]] (Env []) 1
 -- [Constant 5]
 
--- >>> runParser program "((lambda (xs) xs) 5)"
--- [([Combination [Combination [Symbol "lambda",Combination [Symbol "xs"],Symbol "xs"],Constant 5]],"")]
+-- >>> runParser program "((lambda () 1)) \n (add 3 4)"
+-- [([Combination [Combination [Symbol "lambda",Combination [],Constant 1]],Combination [Symbol "add",Constant 3,Constant 4]],"")]
+
+-- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [],Constant 1]],Combination [Symbol "add",Constant 3,Constant 4]] (Env []) 1)
+-- ["1","7"]
 
 -- arg = [Combination [Symbol "lambda",Combination [Symbol "x"],Constant 1],Constant 2]
 -- xs = [Constant 2]
