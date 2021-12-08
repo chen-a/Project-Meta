@@ -517,11 +517,11 @@ eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv 
 -- ["1","3","4","5"]
 
 -- lambdas2.meta
--- >>> runParser program "((lambda (x y z) (add x y)) 1 2 3)"
--- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2,Constant 3]],"")]
+-- >>> runParser program "((lambda (x) x) 1) \n ((lambda (x) 2) 1) \n ((lambda (x y) x) 1 2) \n ((lambda (x y) y) 1 2) \n ((lambda (x y) (add x y)) 1 2) \n ((lambda (x y) (add x 1)) 1 2) \n ((lambda (x y z) (add y z)) 1 2 3) \n ((lambda (x y z) (add x y)) 1 2 3) "
+-- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Symbol "x"],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Constant 2],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Constant 1]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "y",Symbol "z"]],Constant 1,Constant 2,Constant 3],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2,Constant 3]],"")]
 
--- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2,Constant 3]] (Env []) 1)
--- ["3"]
+-- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Symbol "x"],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Constant 2],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Constant 1]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "y",Symbol "z"]],Constant 1,Constant 2,Constant 3],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2,Constant 3]] (Env []) 1)
+-- ["1","2","1","2","3","2","5","3"]
 
 -- stuff that might help with library------------------
 -- add [] = 0
