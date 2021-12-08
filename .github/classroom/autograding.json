@@ -769,9 +769,9 @@
     },
 
     {
-      "name": "Meta Lib Test: ./lib/bool.meta & ./lib-tests/bool/quarter.meta",
+      "name": "Meta Lib Test: ./lib/bool.meta & ./lib/arith.meta & ./lib-tests/bool/quarter.meta",
       "setup": "",
-      "run": "./testLib.sh ./lib/bool.meta ./lib-tests/bool/quarter.meta",
+      "run": "./testLib.sh \"./lib/bool.meta ./lib/arith.meta\" ./lib-tests/bool/quarter.meta",
       "input": "",
       "output": "",
       "comparison": "included",
