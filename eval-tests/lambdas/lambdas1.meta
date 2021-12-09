@@ -1,5 +1,5 @@
 ;; simple lambda functions
-((lambda () 1) 2)
+((lambda () 1))
 ((lambda (x y) x) 3 4)                                                          
 ((lambda (x y) y) 3 4)                                                          
 ((lambda (xs) xs) 5)

@@ -1,0 +1,7 @@
+(and)
+(and #t)
+(and #f)
+(and #t #t)
+(and #f #t)
+(and #t #f)
+(and #f #f)
