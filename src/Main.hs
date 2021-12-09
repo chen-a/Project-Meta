@@ -314,6 +314,7 @@ add [Combination e1, Constant e2] env = add [firstExpr (eval [Combination e1] en
 add [Combination e1, Combination e2] env = add [firstExpr (eval [Combination e1] env 0), firstExpr (eval [Combination e2] env 0)] env
 add [Symbol e1, Constant e2] env = add [envLookup env e1, Constant e2] env
 add [Symbol e1, Symbol e2] env = add [envLookup env e1, envLookup env e2] env
+add [Combination e1, Symbol e2] env = add [firstExpr (eval [Combination e1] env 0), envLookup env e2] env
 
 -- add [Combination x] env = eval (Combination x)
 
@@ -470,18 +471,23 @@ createBinding (Combination (Combination (Combination (Symbol "lambda" : Combinat
     where
         outerEnv = defineBinding (outervars ++ middlevars) (outervalues ++ middlevalues) env
 --createBinding Combination ((Combination (Symbol "lambda" : Combination vars : Combination innerlambda)): innerValues)
-createBinding ((Combination (Combination (Combination (a : as): zs) : ys)) : xs) env = (binding (Combination (Combination (a : as): zs) : ys) env)
 
 
--- >>> runParser program "((((lambda (x) (lambda (y) (lambda (z) z))) 1) 2) 3) "
--- [([Combination [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Symbol "z"]]],Constant 1],Constant 2],Constant 3]],"")]
+-- >>> runParser program "((((lambda (x) (lambda (y) (lambda (z) (add (add x y) z)))) 1) 2) 3)"
+-- [([Combination [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Combination [Symbol "add",Combination [Symbol "add",Symbol "x",Symbol "y"],Symbol "z"]]]],Constant 1],Constant 2],Constant 3]],"")]
 
--- args [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Symbol "z"]]],Constant 1],Constant 2],Constant 3]
--- >>> eval [Combination [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Symbol "z"]]],Constant 1],Constant 2],Constant 3]] (Env []) 1
--- [Constant 3]
+-- args [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Combination [Symbol "add",Combination [Symbol "add",Symbol "x",Symbol "y"],Symbol "z"]]]],Constant 1],Constant 2],Constant 3]
+-- >>> eval [Combination [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Combination [Symbol "add",Combination [Symbol "add",Symbol "x",Symbol "y"],Symbol "z"]]]],Constant 1],Constant 2],Constant 3]] (Env []) 1
+-- [Constant 6]
 
+-- >>> createBinding [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Combination [Symbol "add",Combination [Symbol "add",Symbol "x",Symbol "y"],Symbol "z"]]]],Constant 1],Constant 2],Constant 3] (Env [])
+-- (Lambda [Symbol "z"] (Combination [Symbol "add",Combination [Symbol "add",Symbol "x",Symbol "y"],Symbol "z"]) [Constant 3],Env [("y",Constant 2),("x",Constant 1)])
 
+-- >>> runParser program "(((lambda (x) (lambda (y) (add x y))) 1) 2)"
+-- [([Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]]],Constant 1],Constant 2]],"")]
 
+-- >>> evalBinding [Symbol "z"] (Combination [Symbol "add",Combination [Symbol "add",Symbol "x",Symbol "y"],Symbol "z"]) [Constant 3] (Env [("y",Constant 2),("x",Constant 1)])
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(311,1)-(316,77): Non-exhaustive patterns in function add
 
 defineBinding :: [Expr] -> [Expr] -> Environment -> Environment -- returns environment after it defines all arguments with their values
 defineBinding [] [] env = env
