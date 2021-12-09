@@ -16,7 +16,7 @@ data Expr = Boolean Bool
     | Symbol String
     | Combination [Expr]
     | Dot [Expr] Expr
-    | Lambda [Expr] Expr [Expr]
+    | Lambda [Expr] Expr [Expr] -- variables, body, variable values
     deriving Show
 
 
@@ -251,10 +251,12 @@ eval [] env l = []
 eval ((Boolean b) : xs) env l = Boolean b : eval xs env l
 eval ((Constant n) : xs) env l = Constant n : eval xs env l
 eval ((Symbol s) : xs) env l = Symbol s : eval xs env l
-eval ((Combination (Combination (Symbol "lambda" : xs) : ys)) : rest) env 1 = (resultExpr (lambda [Combination (Combination (Symbol "lambda" : xs) : ys)] env)) : (eval rest env 1)
-eval ((Combination x) : xs) env l = (resultExpr result) : (eval xs (resultEnv result) l)
+eval [Combination (Combination x : ys)] env l = [resultExpr (binding [Combination (Combination x : ys)] env)]
+eval (Combination (Combination x:ys):rest) env l = resultExpr (binding [Combination (Combination x:ys)] env) : eval rest env l
+eval ((Combination x) : xs) env l = resultExpr result : eval xs (resultEnv result) l
     where
         result = combinationEval x env l
+
 
 resultExpr :: (Expr, Environment) -> Expr
 resultExpr (expr, env) = expr
@@ -267,7 +269,7 @@ combinationEval [Constant x] env l = (Constant x, env)
 -- combinationEval [Combination x] env l = combinationEval x env l
 combinationEval ((Symbol s) : xs) env l
     --intrinsics
-    |  s == "eq?" = equality xs env
+    | s == "eq?" = equality xs env
     | s == "add" = add xs env
     | s == "sub" = sub xs env
     | s == "mul" = mult xs env
@@ -428,8 +430,6 @@ splice [Combination [Symbol "quote", x]] env n = splice [x] env (n + 1)
 splice [Combination (x:xs)] env n = let ex = eval xs env n in (Combination (x:ex), env)
 splice [Dot xs x] env n = (Dot xs x, env)
 
-
-
 conditional :: [Expr] -> Environment -> (Expr, Environment)
 conditional [Boolean True, x, y] env = (x, env)
 conditional [Boolean False, x, y] env = (y, env)
@@ -440,66 +440,86 @@ define [Symbol var, Symbol value] env = envAdd env (var, Symbol value)
 define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [Combination value] env 0))
 
 
--- >>> runParser program "(define xs \n (cons 1 (cons 2 (cons 3 nil)))) \n (fst xs)"
+-- >>> runParser program "(define xs \n (cons 2 (cons 2 (cons 3 nil)))) \n (fst xs)"
 -- [([Combination [Symbol "define",Symbol "xs",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]],Combination [Symbol "fst",Symbol "xs"]],"")]
 
 -- >>> define [Symbol "xs",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]] (Env [])
 -- (Symbol "",Env [("xs",Combination [Constant 1,Constant 2,Constant 3])])
 
 -- >>> map printEval (eval [Combination [Symbol "define",Symbol "xs",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]],Combination [Symbol "snd",Symbol "xs"]] (Env []))
--- ["","(2 3)"]
+-- Couldn't match expected type: [Expr]
+--             with actual type: Int -> [Expr]
 
-
-
--- lambda :: [Expr] -> Environment -> Expr -- when you evaluate a lambda/macro, check that the AST node in the args position has the correct form
-lambda :: [Expr] -> Environment -> (Expr, Environment)
-lambda [Combination args] env = ((evalLambda (getVars newLambda) (getBody newLambda) (getValues newLambda) env), env)
+binding :: [Expr] -> Environment -> (Expr, Environment)
+binding [Combination args] env = ((evalBinding (getVars newLambda) (getBody newLambda) (getValues newLambda) env), env)
     where
-     newLambda = createLambda args env
+     newLambda = createBinding args env
+     getBody (Lambda vars body values) = body
+     getVars (Lambda vars body values) = vars
+     getValues (Lambda args body values) = values
+binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody newLambda) (getValues newLambda) env), env)
+    where
+     newLambda = createBinding (Combination args : xs) env
      getBody (Lambda vars body values) = body
      getVars (Lambda vars body values) = vars
      getValues (Lambda args body values) = values
 
-createLambda :: [Expr] -> Environment -> Expr -- creates and returns a lambda expression type from parsed line
-createLambda (Combination (Symbol "lambda" : Combination vars : body) : values) env = Lambda vars (firstExpr body) values --(firstExpr (eval body env 1))
-
-createBody (Combination (Symbol "lambda" : Combination vars : body) : values) env = firstExpr body
-
--- >>> createBody [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2] (Env [])
--- Combination [Symbol "add",Symbol "x",Symbol "y"]
-
--- >>> eval [Combination [Symbol "add",Symbol "x",Symbol "y"]] (Env []) 1
-
-
--- >>> firstExpr (eval [Symbol "x"] (Env []) 1)
--- Symbol "x"
-
-defineLambda :: [Expr] -> [Expr] -> Environment -> Environment -- returns environment after it defines all arguments with their values
-defineLambda [] [] env = env
-defineLambda [] (v : vs) env = getEnv (envAdd env ("neveraccessthis", Combination (v:vs))) -- error?
-defineLambda [Symbol e] (v : vs) env = getEnv (envAdd env (e, v))
-defineLambda (Symbol e: xs) (v : vs) env = defineLambda xs vs (getEnv (envAdd env (e, v)))
-
-evalLambda :: [Expr] -> Expr -> [Expr] -> Environment -> Expr -- returns final output
-evalLambda vars body xs env = firstExpr (eval2 [body] newEnv 1)
+createBinding :: [Expr] -> Environment -> Expr -- creates and returns a lambda expression type from parsed line
+createBinding (Combination (Symbol "lambda" : Combination vars : body) : values) env = Lambda vars (firstExpr body) values --(firstExpr (eval body env 1))
+createBinding ((Combination ((Combination (Symbol "lambda" : Combination vars : [Combination innerlambda])) : outervalues) : innervalues)) env = Combination outervalues --createBinding [Combination innerlambda] outerEnv
     where
-        newEnv = defineLambda vars xs env
+        outerEnv = defineBinding vars outervalues env
+--createBinding Combination ((Combination (Symbol "lambda" : Combination vars : Combination innerlambda)): innerValues)
+createBinding ((Combination (Combination (Combination (a : as): zs) : ys)) : xs) env = getExpr (binding  (Combination (Combination (a : as): zs) : ys) env)
+
+
+getBody (Combination (Symbol "lambda" : Combination vars : body) : values) env = body
+getvars (Combination (Symbol "lambda" : Combination vars : body) : values) env = vars
+getvals (Combination (Symbol "lambda" : Combination vars : body) : values) env = values
+
+-- >>> getvals [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1] (Env [])
+-- [Constant 1]
+
+-- >>> runParser program "(((lambda (x) (lambda (y z) (add x z))) 1) 2 3)"
+-- [([Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "z"]]],Constant 1],Constant 2,Constant 3]],"")]
+-- args = [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "z"]]],Constant 1],Constant 2,Constant 3]
+
+-- >>> createBinding [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "z"]]],Constant 1],Constant 2,Constant 3] (Env [])
+-- Combination [Constant 1]
+-- 
+
+-- >>> createBinding [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1] (Env [])
+-- Lambda [Symbol "x"] (Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]) [Constant 1]
+
+-- >>> createBinding [Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]] (Env [])
+-- Lambda [Symbol "y"] (Symbol "x") []
+
+defineBinding :: [Expr] -> [Expr] -> Environment -> Environment -- returns environment after it defines all arguments with their values
+defineBinding [] [] env = env
+defineBinding [] (v : vs) env = getEnv (envAdd env ("neveraccessthis", Combination (v:vs))) -- error?
+defineBinding [Symbol e] (v : vs) env = getEnv (envAdd env (e, v))
+defineBinding (Symbol e: xs) (v : vs) env = defineBinding xs vs (getEnv (envAdd env (e, v)))
+
+evalBinding :: [Expr] -> Expr -> [Expr] -> Environment -> Expr -- returns final output
+evalBinding vars body xs env = firstExpr (eval2 [body] newEnv 1)
+    where
+        newEnv = defineBinding vars xs env
 
 eval2 :: [Expr] -> Environment -> Int -> [Expr]
 eval2 [] env l = []
 eval2 ((Boolean b) : xs) env l = Boolean b : eval2 xs env l
 eval2 ((Constant n) : xs) env l = Constant n : eval2 xs env l
 eval2 ((Symbol s) : xs) env l = envLookup env s : eval2 xs env l
-eval2 [Combination (Combination (Symbol "lambda" : xs) : ys)] env 1 = [resultExpr (lambda [Combination (Combination (Symbol "lambda" : xs) : ys)] env)]
+eval2 [Combination (Combination (Symbol "lambda" : xs) : ys)] env 1 = [resultExpr (binding [Combination (Combination (Symbol "lambda" : xs) : ys)] env)]
 eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv result) l)
     where
         result = combinationEval x env l
 
--- >>> defineLambda [] [] (Env [("test2",Constant 5),("test",Constant 5)])
+-- >>> defineBinding [] [] (Env [("test2",Constant 5),("test",Constant 5)])
 -- Env [("test2",Constant 5),("test",Constant 5)]
 
--- >>> createLambda [Combination [Symbol "lambda",Combination [Symbol "x"],Constant 1]] (Env [])
--- Lambda [Symbol "x"] (Constant 1) []
+-- >>> createBinding [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1],Constant 2] (Env [])
+-- Lambda [Symbol "y"] (Symbol "x") []
 
 -- >>> firstExpr (eval [Constant 1] (Env []) 1)
 -- Constant 1
@@ -513,15 +533,31 @@ eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv 
 -- >>> runParser program "((lambda () 1)) \n ((lambda (x y) x) 3 4)  \n ((lambda (x y) y) 3 4)  \n ((lambda (xs) xs) 5)"
 -- [([Combination [Combination [Symbol "lambda",Combination [],Constant 1]],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 3,Constant 4],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 3,Constant 4],Combination [Combination [Symbol "lambda",Combination [Symbol "xs"],Symbol "xs"],Constant 5]],"")]
 
--- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [],Constant 1]],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 3,Constant 4],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 3,Constant 4],Combination [Combination [Symbol "lambda",Combination [Symbol "xs"],Symbol "xs"],Constant 5]] (Env []) 1)
--- ["1","3","4","5"]
+-- >>> eval [Combination [Combination [Symbol "lambda",Combination [],Constant 1]],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 3,Constant 4],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 3,Constant 4],Combination [Combination [Symbol "lambda",Combination [Symbol "xs"],Symbol "xs"],Constant 5]] (Env []) 0
+-- [Constant 1,Constant 3,Constant 4,Constant 5]
+
+
+-- >>> resultExpr (binding [Combination [Combination [Symbol "lambda",Combination [],Constant 1]]] (Env [])) : eval [Symbol "z"] (Env []) 0
+
+
+-- >>> runParser program "((lambda (xs) xs) 5)"
+-- [([Combination [Combination [Symbol "lambda",Combination [Symbol "xs"],Symbol "xs"],Constant 5]],"")]
+
+-- >>> eval ([Combination [Combination [Symbol "lambda",Combination [Symbol "xs"],Symbol "xs"],Constant 5]]) (Env []) 0
+-- [Constant 5]
+
+
+
+
+
+
 
 -- lambdas2.meta
 -- >>> runParser program "((lambda (x) x) 1) \n ((lambda (x) 2) 1) \n ((lambda (x y) x) 1 2) \n ((lambda (x y) y) 1 2) \n ((lambda (x y) (add x y)) 1 2) \n ((lambda (x y) (add x 1)) 1 2) \n ((lambda (x y z) (add y z)) 1 2 3) \n ((lambda (x y z) (add x y)) 1 2 3) "
 -- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Symbol "x"],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Constant 2],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Constant 1]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "y",Symbol "z"]],Constant 1,Constant 2,Constant 3],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2,Constant 3]],"")]
 
--- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Symbol "x"],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Constant 2],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Constant 1]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "y",Symbol "z"]],Constant 1,Constant 2,Constant 3],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2,Constant 3]] (Env []) 1)
--- ["1","2","1","2","3","2","5","3"]
+-- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Symbol "x"],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Constant 2],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Constant 1]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "y",Symbol "z"]],Constant 1,Constant 2,Constant 3],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2,Constant 3]] (Env []) 0)
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(267,1)-(289,64): Non-exhaustive patterns in function combinationEval
 
 -- >>> runParser program "((lambda (x y z) (add y z)) 1 2 3)"
 -- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "y",Symbol "z"]],Constant 1,Constant 2,Constant 3]],"")]
@@ -530,9 +566,10 @@ eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv 
 -- [([Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1],Constant 2]],"")]
 
 -- >>> eval [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1],Constant 2]] (Env []) 1
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(266,1)-(288,64): Non-exhaustive patterns in function combinationEval
+-- Prelude.undefined
 
-
+-- >>> binding [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1],Constant 2] (Env [])
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(452,1)-(457,49): Non-exhaustive patterns in function binding
 
 
 
