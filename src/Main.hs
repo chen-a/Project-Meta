@@ -304,7 +304,7 @@ cons :: [Expr] -> Expr
 cons [x, Symbol "nil"] = Combination [eval x]
 cons [x, Combination (Symbol "cons" : xs)] = cons [eval x, eval(Combination xs)]
 cons [x, Combination (Symbol e: xs)] = Combination [eval x, eval (Combination (Symbol e:xs))] -- changed
-cons [x, Combination [xs]] = Combination [x, xs] -- added
+cons [x, Combination (Constant e : xs)] = Combination (x : Constant e : xs) -- added
 cons [x, Dot ys y] = Dot (x:ys) y 
 cons [x, y] = Dot [x] y
 cons _ = Symbol "Error"
@@ -312,7 +312,7 @@ cons _ = Symbol "Error"
 -- >>> runParser program "(cons (add 1 (add 3 (add 4 5))) (cons 1 (cons 3 (cons (add 2 (add 3 4)) nil))))"
 -- [([Combination [Symbol "cons",Combination [Symbol "add",Constant 1,Combination [Symbol "add",Constant 3,Combination [Symbol "add",Constant 4,Constant 5]]],Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]]]],"")]
 
--- >>> runParser program "(cons (add 2 (add 3 4)) nil))"
+-- >>> runParser program "(cons 1 (cons 3 (cons (add 2 (add 3 4)) nil)))"
 -- [([Combination [Symbol "cons",Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]],"")]
 
 -- >>> cons [Constant 3,Combination [Symbol "cons",Combination [Symbol "add",Constant 2,Combination [Symbol "add",Constant 3,Constant 4]],Symbol "nil"]]
