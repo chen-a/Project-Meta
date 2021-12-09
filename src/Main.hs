@@ -251,7 +251,7 @@ eval [] env l = []
 eval ((Boolean b) : xs) env l = Boolean b : eval xs env l
 eval ((Constant n) : xs) env l = Constant n : eval xs env l
 eval ((Symbol s) : xs) env l = Symbol s : eval xs env l
-eval  ((Combination (Combination (Symbol "lambda" : xs) : ys)) : rest) env 1 = (resultExpr (lambda [Combination (Combination (Symbol "lambda" : xs) : ys)] env)) : (eval rest env 1)
+eval ((Combination (Combination (Symbol "lambda" : xs) : ys)) : rest) env 1 = (resultExpr (lambda [Combination (Combination (Symbol "lambda" : xs) : ys)] env)) : (eval rest env 1)
 eval ((Combination x) : xs) env l = (resultExpr result) : (eval xs (resultEnv result) l)
     where
         result = combinationEval x env l
@@ -264,7 +264,7 @@ resultEnv (expr, env) = env
 
 combinationEval :: [Expr] -> Environment -> Int -> (Expr, Environment) -- currently doesn't report errors?
 combinationEval [Constant x] env l = (Constant x, env)
-combinationEval [Combination x] env l = combinationEval x env l
+-- combinationEval [Combination x] env l = combinationEval x env l
 combinationEval ((Symbol s) : xs) env l
     --intrinsics
     |  s == "eq?" = equality xs env
@@ -522,6 +522,21 @@ eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv 
 
 -- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Symbol "x"],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Constant 2],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Constant 1]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "y",Symbol "z"]],Constant 1,Constant 2,Constant 3],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2,Constant 3]] (Env []) 1)
 -- ["1","2","1","2","3","2","5","3"]
+
+-- >>> runParser program "((lambda (x y z) (add y z)) 1 2 3)"
+-- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "y",Symbol "z"]],Constant 1,Constant 2,Constant 3]],"")]
+
+-- >>> runParser program "(((lambda (x) (lambda (y) x)) 1) 2)"
+-- [([Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1],Constant 2]],"")]
+
+-- >>> eval [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1],Constant 2]] (Env []) 1
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(266,1)-(288,64): Non-exhaustive patterns in function combinationEval
+
+
+
+
+
+
 
 -- stuff that might help with library------------------
 -- add [] = 0
