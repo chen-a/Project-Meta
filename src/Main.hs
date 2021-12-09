@@ -466,36 +466,20 @@ createBinding (Combination (Symbol "lambda" : Combination vars : body) : values)
 createBinding ((Combination ((Combination (Symbol "lambda" : Combination vars : [Combination innerlambda])) : outervalues) : innervalues)) env = createBinding ((Combination innerlambda) : innervalues) outerEnv
     where
         outerEnv = defineBinding vars outervalues env
+createBinding (Combination (Combination (Combination (Symbol "lambda" : Combination outervars : [Combination (Symbol "lambda" : Combination middlevars : [Combination innerlambda])]) : outervalues) : middlevalues ) : innervalues) env = createBinding ((Combination innerlambda) : innervalues) outerEnv
+    where
+        outerEnv = defineBinding (outervars ++ middlevars) (outervalues ++ middlevalues) env
 --createBinding Combination ((Combination (Symbol "lambda" : Combination vars : Combination innerlambda)): innerValues)
 createBinding ((Combination (Combination (Combination (a : as): zs) : ys)) : xs) env = (binding (Combination (Combination (a : as): zs) : ys) env)
 
 
--- >>> runParser program "((((lambda (x) (lambda (y) (lambda (z) z))) 1) 2) 3)"
+-- >>> runParser program "((((lambda (x) (lambda (y) (lambda (z) z))) 1) 2) 3) "
 -- [([Combination [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Symbol "z"]]],Constant 1],Constant 2],Constant 3]],"")]
 
--- >>> binding [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]]],Constant 1],Constant 2,Constant 3]] (Env [])
--- (Constant 3,Env [("x",Constant 1)])
+-- args [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Symbol "z"]]],Constant 1],Constant 2],Constant 3]
+-- >>> eval [Combination [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Symbol "z"]]],Constant 1],Constant 2],Constant 3]] (Env []) 1
+-- [Constant 3]
 
--- >>> createBinding [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1],Constant 2] (Env [])
--- (Lambda [Symbol "y"] (Symbol "x") [Constant 2],Env [("x",Constant 1)])
-
--- >>> binding [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1],Constant 2] (Env [])
--- (Lambda [Symbol "y"] (Symbol "x") [Constant 2],Env [("x",Constant 1)])
-
--- >>> createBinding [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1],Constant 2] (Env [])
--- (Lambda [Symbol "y"] (Symbol "x") [Constant 2],Env [("x",Constant 1)])
-
--- >>> evalBinding [Symbol "y"] (Symbol "x") [Constant 2] (Env [("x",Constant 1)])
--- Constant 1
-
--- >>> defineBinding [Symbol "y"] [Constant 2] (Env [("x",Constant 1)])
--- Env [("y",Constant 2),("x",Constant 1)]
-
--- >>> firstExpr (eval2 [Symbol "x"] (Env [("y",Constant 2),("x",Constant 1)]) 0)
--- Constant 1
-
--- >>> defineBinding [Symbol "x"] [Constant 1] (Env [])
--- Env [("x",Constant 1)]
 
 
 
@@ -555,11 +539,6 @@ eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv 
 -- [Constant 5]
 
 
-
-
-
-
-
 -- lambdas2.meta
 -- >>> runParser program "((lambda (x) x) 1) \n ((lambda (x) 2) 1) \n ((lambda (x y) x) 1 2) \n ((lambda (x y) y) 1 2) \n ((lambda (x y) (add x y)) 1 2) \n ((lambda (x y) (add x 1)) 1 2) \n ((lambda (x y z) (add y z)) 1 2 3) \n ((lambda (x y z) (add x y)) 1 2 3) "
 -- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Symbol "x"],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Constant 2],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Constant 1]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "y",Symbol "z"]],Constant 1,Constant 2,Constant 3],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2,Constant 3]],"")]
@@ -567,19 +546,28 @@ eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv 
 -- >>> map printEval (eval [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Symbol "x"],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Constant 2],Constant 1],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "x"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Symbol "y"],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Constant 1]],Constant 1,Constant 2],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "y",Symbol "z"]],Constant 1,Constant 2,Constant 3],Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "y"]],Constant 1,Constant 2,Constant 3]] (Env []) 0)
 -- ["1","2","1","2","3","2","5","3"]
 
--- >>> runParser program "((lambda (x y z) (add y z)) 1 2 3)"
--- [([Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y",Symbol "z"],Combination [Symbol "add",Symbol "y",Symbol "z"]],Constant 1,Constant 2,Constant 3]],"")]
+
+
+-- lambdas3.meta 
+-- >>> runParser program "(((lambda (x y) (lambda (z) (add x z))) 1 2) 3) "
+-- [([Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "z"]]],Constant 1,Constant 2],Constant 3]],"")]
 
 -- >>> runParser program "(((lambda (x) (lambda (y) x)) 1) 2)"
 -- [([Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1],Constant 2]],"")]
 
--- >>> eval [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1],Constant 2]] (Env []) 1
--- [Symbol "error"]
+-- >>> eval [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Combination [Symbol "add",Symbol "x",Symbol "z"]]],Constant 1,Constant 2],Constant 3]] (Env []) 1
+-- [Constant 4]
 
 -- >>> binding [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Symbol "x"]],Constant 1],Constant 2] (Env [])
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(452,1)-(457,49): Non-exhaustive patterns in function binding
+-- (Constant 1,Env [("x",Constant 1)])
 
 
+-- >>> runParser program "((((lambda (x) (lambda (y) (lambda (z) z))) 1) 2) 3) "
+-- [([Combination [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Symbol "z"]]],Constant 1],Constant 2],Constant 3]],"")]
+
+-- args [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Symbol "z"]]],Constant 1],Constant 2],Constant 3]
+-- >>> eval [Combination [Combination [Combination [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "lambda",Combination [Symbol "z"],Symbol "z"]]],Constant 1],Constant 2],Constant 3]] (Env []) 1
+-- ProgressCancelledException
 
 
 
@@ -593,4 +581,3 @@ eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv 
 -- mult (Constant (x : xs) = x * sub xs
 -- divide [] = 1
 -- divide (Constant x : xs) = x `div` sub xs -- if only one digit, return (1 / x)
-
