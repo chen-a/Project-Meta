@@ -8,12 +8,13 @@
                 (and (snd args)
                 #f))))
 
-(define and 
+(define or
     (macro (args)
         (if (eq? args nil)
             #f
-            if (eq? (snd args) nil)
-                (args)
-                if (fst args)
-                (and (snd args)
-                #f))))
+            if (fst args)
+                (fst args)
+                (or (snd args))))))
+
+(define cond
+    (macro (args)))

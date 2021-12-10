@@ -8,14 +8,10 @@
     (lambda (args)
         if (eq? (snd args) nil)
             sub 0 (fst args)
-            ())))
-(define -                           -- not finished (should only deal with lists as args)
-    (lambda (args)
-        (if (list? args)
-            (if (eq? args nil)
-                0
-                (sub (fst args) (- (snd args))))
-            (sub 0 args))))
+            (if (eq? (snd (snd args)) nil)
+                (sub (fst args) (fst (snd args)))
+                (- )))))
+
 
 (define *
     (lambda (args)
