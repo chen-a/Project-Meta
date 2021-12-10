@@ -263,7 +263,8 @@ resultEnv (expr, env) = env
 
 combinationEval :: [Expr] -> Environment -> Int -> (Expr, Environment) -- currently doesn't report errors?
 combinationEval [Constant x] env l = (Constant x, env)
-combinationEval [Combination [Symbol var1, Symbol var2]] env l = (firstExpr (eval [Combination (envLookup env var1 : [envLookup env var2])] env l), env)
+combinationEval [Combination e1, Symbol e2] env l = binding [Combination e1, Symbol e2] env
+combinationEval [Combination e1, Combination e2] env l = binding [Combination e1, Combination e2] env
 combinationEval ((Symbol s) : xs) env l
     --intrinsics
     | s == "eq?" = equality xs env
@@ -284,6 +285,8 @@ combinationEval ((Symbol s) : xs) env l
     | s == "splice" = splice xs env (l-1)
     | s == "if" = conditional xs env
     | s == "define" = define xs env
+    -- | s == "lambda" = binding [Combination (Combination (Symbol s : xs))] env
+        -- Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]]
     | otherwise = combinationEval ((envLookup env s) : xs) env l
 
 firstExpr :: [Expr] -> Expr
@@ -443,8 +446,14 @@ define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [C
 -- >>> define [Symbol "xs",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]] (Env [("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])])
 -- (Symbol "",Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])])
 
--- >>> runParser program "(third xs)"
--- [([Combination [Symbol "third",Symbol "xs"]],"")]
+-- >>> runParser program "(third (cons 10 (cons 11 (cons 12 (cons 13 (cons 14 nil))))))"
+-- [([Combination [Symbol "third",Combination [Symbol "cons",Constant 10,Combination [Symbol "cons",Constant 11,Combination [Symbol "cons",Constant 12,Combination [Symbol "cons",Constant 13,Combination [Symbol "cons",Constant 14,Symbol "nil"]]]]]]],"")]
+
+-- >>> eval [Combination [Symbol "third",Combination [Symbol "cons",Constant 10,Combination [Symbol "cons",Constant 11,Combination [Symbol "cons",Constant 12,Combination [Symbol "cons",Constant 13,Combination [Symbol "cons",Constant 14,Symbol "nil"]]]]]]] (Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])]) 0
+-- [Constant 12]
+
+-- >>> combinationEval [Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]],Symbol "xs"] (Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])]) 0
+-- (Constant 3,Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])])
 
 -- >>> envLookup (Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])]) ("third")
 -- Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]]
@@ -452,11 +461,26 @@ define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [C
 -- >>> envLookup (Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])]) ("xs")
 -- Combination [Constant 1,Constant 2,Constant 3]
 
--- >>> eval [Combination (Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]] : [Combination [Constant 1,Constant 2,Constant 3]])] (Env []) 0
--- [Constant 3]
+-- >>> binding [Combination (Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]] : [Combination [Constant 1,Constant 2,Constant 3]])] (Env [])
+-- (Constant 3,Env [])
 
--- >>> eval [Combination [Symbol "third",Symbol "xs"]] (Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])]) 0
--- ProgressCancelledException
+
+
+-- >>> runParser program "(third '(3 4 5))"
+-- [([Combination [Symbol "third",Combination [Symbol "quote",Combination [Constant 3,Constant 4,Constant 5]]]],"")]
+
+-- >>> eval [Combination [Symbol "third",Combination [Symbol "quote",Combination [Constant 3,Constant 4,Constant 5]]]] (Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])]) 0
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(265,1)-(291,64): Non-exhaustive patterns in function combinationEval
+
+-- third = Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]]
+
+-- >>> eval [Combination (Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]] : [Combination [Symbol "quote",Combination [Constant 3,Constant 4,Constant 5]]])]  (Env []) 0
+-- [Constant 5]
+
+
+
+
+
 
 binding :: [Expr] -> Environment -> (Expr, Environment)
 binding [Combination (Combination args : xs)] env = binding (Combination args : xs) env
