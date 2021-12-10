@@ -191,10 +191,19 @@ envLookup (Env ((vname,value) : rest)) s =
     if vname == s then value
                   else envLookup (Env rest) s
 
-envLookup2 :: Environment -> Expr -> Expr
-envLookup2 (Env ((vname,value) : rest)) (Symbol s) =
-    if vname == s then value
-                  else envLookup2 (Env rest) (Symbol s)
+envUpdate :: Environment -> String -> Expr -> (Expr, Environment)
+envUpdate (Env []) s newExpr = (Symbol "", Env [])
+envUpdate (Env xs) s newExpr = (Symbol "",Env (updateHelper xs s newExpr))
+
+updateHelper :: [(String, Expr)] -> String -> Expr -> [(String, Expr)]
+updateHelper ((vname, value) : rest) s newExpr =
+    if vname == s then ((vname, newExpr) : updateHelper rest s newExpr)
+                  else ((vname, value) : updateHelper rest s newExpr)
+updateHelper [] s newExpr = []
+
+-- >>> envUpdate (Env [("x", Constant 2), ("y", Constant 100)]) ("x") (Constant 50)
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(204,1)-(206,69): Non-exhaustive patterns in function updateHelper
+
 
 
 envAdd :: Environment -> (String, Expr) -> (Expr, Environment)
@@ -250,10 +259,11 @@ resultExpr (expr, env) = expr
 resultEnv :: (Expr, Environment) -> Environment
 resultEnv (expr, env) = env
 
-combinationEval :: [Expr] -> Environment -> Int -> (Expr, Environment) 
+combinationEval :: [Expr] -> Environment -> Int -> (Expr, Environment)
 combinationEval [Constant x] env l = (Constant x, env)
 combinationEval [Combination e1, Symbol e2] env l = binding [Combination e1, Symbol e2] env
 combinationEval [Combination e1, Combination e2] env l = binding [Combination e1, Combination e2] env
+combinationEval [Combination e1, Constant e2] env l = binding [Combination e1, Constant e2] env
 combinationEval ((Symbol s) : xs) env l
     --intrinsics
     | s == "eq?" = equality xs env
@@ -286,6 +296,8 @@ equality [Constant e1, Constant e2] env
 equality [Boolean e1, Boolean e2] env
     | e1 == e2 = (Boolean True, env)
     | otherwise = (Boolean False, env)
+equality [Constant e1, Symbol e2] env = equality [Constant e1, envLookup env e2] env
+equality [Symbol e1, Constant e2] env = equality [envLookup env e1, Constant e2] env
 equality [Constant e1, Combination (Symbol "add":xs)] env = equality [Constant e1, getExpr (add xs env)] env
 equality [Combination (Symbol "add":xs), Constant e2] env = equality [getExpr (add xs env), Constant e2] env
 
@@ -304,6 +316,8 @@ sub [Combination ((Symbol x):xs)] env = sub xs env
 sub [Constant e1, Combination e2] env = sub [Constant e1, firstExpr (eval [Combination e2] env 0)] env
 sub [Combination e1, Constant e2] env = sub [firstExpr (eval [Combination e1] env 0), Constant e2] env
 sub [Combination e1, Combination e2] env = sub [firstExpr (eval [Combination e1] env 0), firstExpr (eval [Combination e2] env 0)] env
+sub [Symbol e1, Constant e2] env = sub [envLookup env e1, Constant e2] env
+sub [Constant e1, Symbol e2] env = sub [Constant e1, envLookup env e2] env
 
 
 mult [Constant e1, Constant e2] env = (Constant (e1 * e2), env)
@@ -322,7 +336,7 @@ first [Combination x] env = a x
     where
         a [Symbol "cons", e1, e2] = (e1, env)
         a [Symbol "quote", Combination y] = first [Combination y] env
-        a (Symbol "snd" : rest) = first [(firstExpr (eval [Combination x] env 0))] env 
+        a (Symbol "snd" : rest) = first [(firstExpr (eval [Combination x] env 0))] env
         a (Symbol "fst" : rest) = first [(firstExpr (eval [Combination x] env 0))] env
         a (e1 : e2) = (e1, env)
 first [Symbol var] env = first [envLookup env var] env
@@ -390,8 +404,9 @@ splice [Combination (x:xs)] env n = let ex = eval xs env n in (Combination (x:ex
 splice [Dot xs x] env n = (Dot xs x, env)
 
 conditional :: [Expr] -> Environment -> (Expr, Environment)
-conditional [Boolean True, x, y] env = (x, env)
-conditional [Boolean False, x, y] env = (y, env)
+conditional [Boolean True, x, y] env = (firstExpr (eval2 [x] env 0), env)
+conditional [Boolean False, x, y] env = (firstExpr (eval2 [y] env 0), env)
+conditional [Combination e1, x, y] env = conditional [firstExpr (eval2 [Combination e1] env 0), x, y] env
 
 define :: [Expr] -> Environment -> (Expr, Environment)
 define [Symbol var, Constant value] env = envAdd env (var, Constant value)
@@ -413,25 +428,50 @@ binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody
         getEnv (Lambda vars body values, Env e) = Env e
         getEnv (Macro vars body values, Env e) = Env e
 
--- >>> runParser program "((macro (x) x) 'x)"
--- [([Combination [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Combination [Symbol "quote",Symbol "x"]]],"")]
+-- >>> runParser program "(define zero (lambda (n) (if (eq? n 0) n (zero (sub n 1)))))"
+-- [([Combination [Symbol "define",Symbol "zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]]]],"")]
 
--- >>> eval [Combination [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Combination [Symbol "quote",Symbol "x"]]] (Env []) 0
--- [Symbol "x"]
+-- >>> define [Symbol "zero", Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]]] (Env [])
+-- (Symbol "",Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+
+-- >>> binding [Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]], Constant 1] (Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(293,1)-(302,108): Non-exhaustive patterns in function equality
+
+-- >>> createBinding [Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]], Constant 1] (Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+-- (Lambda [Symbol "n"] (Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]) [Constant 1],Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+
+-- >>> defineBinding [Symbol "n"] [Constant 1] (Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+-- Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]
+
+-- >>> eval2 [(Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]])] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]) 0
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(293,1)-(302,108): Non-exhaustive patterns in function equality
+
+-- >>> conditional [Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(284,1)-(293,108): Non-exhaustive patterns in function equality
+
+-- >>> equality [Symbol "n",Constant 0] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+-- (Boolean False,Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+
+-- conditional [Boolean False, x, y] env = (firstExpr (eval2 [y] env 0), env) 
+
+-- >>> eval2 [Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]) 0
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(284,1)-(293,108): Non-exhaustive patterns in function equality
+
+-- >>> combinationEval [Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]], Combination [Symbol "sub",Symbol "n",Constant 1]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]) 0
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(293,1)-(302,108): Non-exhaustive patterns in function equality
+
+-- >>> createBinding [Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]], Combination [Symbol "sub",Symbol "n",Constant 1]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+-- (Lambda [Symbol "n"] (Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]) [Combination [Symbol "sub",Symbol "n",Constant 1]],Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+
+-- >>> defineBinding [Symbol "n"] [Combination [Symbol "sub",Symbol "n",Constant 1]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+-- Env [("n",Combination [Symbol "sub",Symbol "n",Constant 1]),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]
 
 
-
--- >>> runParser program "((macro (x) '$x) 1) \n ((macro (x) ''$$x) y) \n ((macro (x) ''$x) y) "
--- [([Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "splice",Symbol "x"]]],Constant 1],Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]],Symbol "y"],Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Symbol "x"]]]],Symbol "y"]],"")]
-
--- >>> map printEval (eval [Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "splice",Symbol "x"]]],Constant 1],Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]],Symbol "y"],Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Symbol "x"]]]],Symbol "y"]] (Env []) 0)
--- ["1","y","x"]
 
 
 createBinding :: [Expr] -> Environment -> (Expr, Environment) -- creates and returns a lambda expression type from parsed line
 createBinding (Combination (Symbol "macro" : Combination vars : body) : values) env = (Macro vars (firstExpr body) (eval values env 0), env) -- 
-
-createBinding (Combination (Symbol "lambda" : Combination vars : body) : values) env = (Lambda vars (firstExpr body) values, env) 
+createBinding (Combination (Symbol "lambda" : Combination vars : body) : values) env = (Lambda vars (firstExpr body) values, env)
 createBinding (Combination (Symbol "lambda" : vars : [body]): values) env = (Lambda [vars] body [Combination values], env)
 createBinding ((Combination ((Combination (Symbol "lambda" : Combination vars : [Combination innerlambda])) : outervalues) : innervalues)) env = createBinding ((Combination innerlambda) : innervalues) outerEnv
     where
@@ -443,8 +483,20 @@ createBinding (Combination (Combination (Combination (Symbol "lambda" : Combinat
 defineBinding :: [Expr] -> [Expr] -> Environment -> Environment -- returns environment after it defines all arguments with their values
 defineBinding [] [] env = env
 defineBinding [] (v : vs) env = getEnv (envAdd env ("neveraccessthis", Combination (v:vs)))
-defineBinding [Symbol e] (v : vs) env = getEnv (envAdd env (e, v))
-defineBinding (Symbol e: xs) (v : vs) env = defineBinding xs vs (getEnv (envAdd env (e, v)))
+defineBinding [Symbol e] (v : vs) env =  updateOrAdd e v env
+    where
+        updateOrAdd s v env =
+            if compareExpr (envLookup env s) (Symbol "error") then (getEnv (envAdd env (e, v)))
+                                                              else (getEnv (envUpdate env s v))
+defineBinding (Symbol e: xs) (v : vs) env = defineBinding xs vs (updateOrAdd e v env)
+    where
+        updateOrAdd s v env =
+            if compareExpr (envLookup env s) (Symbol "error") then (getEnv (envAdd env (e, v)))
+                                                              else (getEnv (envUpdate env s v))
+
+compareExpr :: Expr -> Expr -> Bool 
+compareExpr (Symbol e1) (Symbol e2) = (e1 == e2)
+compareExpr e1 e2 = False
 
 evalBinding :: [Expr] -> Expr -> [Expr] -> Environment -> Expr -- returns final output
 evalBinding vars body xs env = firstExpr (eval2 [body] newEnv 0)
@@ -461,7 +513,7 @@ eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv 
     where
         result = combinationEval2 x env l
 
-combinationEval2 :: [Expr] -> Environment -> Int -> (Expr, Environment) 
+combinationEval2 :: [Expr] -> Environment -> Int -> (Expr, Environment)
 combinationEval2 [Constant x] env l = (Constant x, env)
 combinationEval2 [Combination e1, Symbol e2] env l = binding [Combination e1, Symbol e2] env
 combinationEval2 [Combination e1, Combination e2] env l = binding [Combination e1, Combination e2] env
@@ -496,14 +548,6 @@ quote2 [Combination [Symbol "splice", x]] env n = quote2 [x] env (n - 1)
 quote2 [Combination [Symbol "quote", x]] env n = quote2 [x] env (n + 1)--let (ex, en) quote2 [x] env (n + 1) in (Combination [Symbol "quote", ex], env)
 quote2 [Combination (x:xs)] env n = let ex = eval2 xs env n in (Combination (x:ex), env)
 quote2 [Dot xs x] env n = (Dot xs x, env)
-
--- >>> runParser program "'''$$$x"
--- [([Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]]]],"")]
-
--- >>> eval [Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]]]] (Env []) 0
--- [Combination [Symbol "quote",Combination [Symbol "quote",Symbol "x"]]]
-
--- body = Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]
 
 splice2 :: [Expr] -> Environment -> Int -> (Expr, Environment)
 splice2 [Constant x] env n = (Constant x, env)

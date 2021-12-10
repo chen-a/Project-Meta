@@ -10,7 +10,7 @@
             sub 0 (fst args)
             (if (eq? (snd (snd args)) nil)
                 (sub (fst args) (fst (snd args)))
-                (- )))))
+                (sub )))))
 
 
 (define *
