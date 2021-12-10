@@ -435,7 +435,7 @@ binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody
 -- (Symbol "",Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
 
 -- >>> binding [Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]], Constant 1] (Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(293,1)-(302,108): Non-exhaustive patterns in function equality
+-- (Constant 0,Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
 
 -- >>> createBinding [Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]], Constant 1] (Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
 -- (Lambda [Symbol "n"] (Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]) [Constant 1],Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
@@ -444,10 +444,10 @@ binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody
 -- Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]
 
 -- >>> eval2 [(Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]])] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]) 0
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(293,1)-(302,108): Non-exhaustive patterns in function equality
+-- [Constant 0]
 
 -- >>> conditional [Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(284,1)-(293,108): Non-exhaustive patterns in function equality
+-- (Constant 0,Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
 
 -- >>> equality [Symbol "n",Constant 0] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
 -- (Boolean False,Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
@@ -455,16 +455,16 @@ binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody
 -- conditional [Boolean False, x, y] env = (firstExpr (eval2 [y] env 0), env) 
 
 -- >>> eval2 [Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]) 0
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(284,1)-(293,108): Non-exhaustive patterns in function equality
+-- [Constant 0]
 
 -- >>> combinationEval [Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]], Combination [Symbol "sub",Symbol "n",Constant 1]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]) 0
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(293,1)-(302,108): Non-exhaustive patterns in function equality
+-- (Constant 0,Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
 
 -- >>> createBinding [Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]], Combination [Symbol "sub",Symbol "n",Constant 1]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
 -- (Lambda [Symbol "n"] (Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]) [Combination [Symbol "sub",Symbol "n",Constant 1]],Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
 
 -- >>> defineBinding [Symbol "n"] [Combination [Symbol "sub",Symbol "n",Constant 1]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
--- Env [("n",Combination [Symbol "sub",Symbol "n",Constant 1]),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]
+-- Env [("n",Constant 0),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]
 
 
 
@@ -487,12 +487,12 @@ defineBinding [Symbol e] (v : vs) env =  updateOrAdd e v env
     where
         updateOrAdd s v env =
             if compareExpr (envLookup env s) (Symbol "error") then (getEnv (envAdd env (e, v)))
-                                                              else (getEnv (envUpdate env s v))
+                                                              else (getEnv (envUpdate env s (firstExpr (eval2 [v] env 0))))
 defineBinding (Symbol e: xs) (v : vs) env = defineBinding xs vs (updateOrAdd e v env)
     where
         updateOrAdd s v env =
             if compareExpr (envLookup env s) (Symbol "error") then (getEnv (envAdd env (e, v)))
-                                                              else (getEnv (envUpdate env s v))
+                                                              else (getEnv (envUpdate env s (firstExpr (eval2 [v] env 0))))
 
 compareExpr :: Expr -> Expr -> Bool 
 compareExpr (Symbol e1) (Symbol e2) = (e1 == e2)
