@@ -413,16 +413,23 @@ binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody
         getEnv (Lambda vars body values, Env e) = Env e
         getEnv (Macro vars body values, Env e) = Env e
 
--- >>> runParser program "((macro (x) x) 1)"
--- [([Combination [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Constant 1]],"")]
+-- >>> runParser program "((macro (x) x) 'x)"
+-- [([Combination [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Combination [Symbol "quote",Symbol "x"]]],"")]
 
--- >>> eval [Combination [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Constant 1]] (Env []) 0
--- [Constant 1]
+-- >>> eval [Combination [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Combination [Symbol "quote",Symbol "x"]]] (Env []) 0
+-- [Combination [Symbol "quote",Symbol "x"]]
+
+-- >>> createBinding [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Combination [Symbol "quote",Symbol "x"]] (Env [])
+-- (Macro [Symbol "x"] (Symbol "x") [Symbol "x"],Env [])
+
+-- >>> eval [Combination [Symbol "quote",Symbol "x"]] (Env []) 0
+-- [Symbol "x"]
 
 -- >>> binding [Combination [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Constant 1]] (Env [])
+-- (Constant 1,Env [])
 
 createBinding :: [Expr] -> Environment -> (Expr, Environment) -- creates and returns a lambda expression type from parsed line
-createBinding (Combination (Symbol "macro" : Combination vars : body) : values) env = (Macro vars (firstExpr body) values, env) 
+createBinding (Combination (Symbol "macro" : Combination vars : body) : values) env = (Macro vars (firstExpr body) (eval values env 0), env) 
 
 createBinding (Combination (Symbol "lambda" : Combination vars : body) : values) env = (Lambda vars (firstExpr body) values, env) 
 createBinding (Combination (Symbol "lambda" : vars : [body]): values) env = (Lambda [vars] body [Combination values], env)
