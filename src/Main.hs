@@ -318,7 +318,6 @@ add [Combination e1, Symbol e2] env = add [firstExpr (eval [Combination e1] env 
 -- >>> runParser program "(fst (snd (snd args)))"
 -- [([Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "args"]]]],"")]
 
--- >>> eval 
 
 
 
@@ -434,8 +433,11 @@ define [Symbol var, Combination (Symbol "lambda" : xs)] env = envAdd env (var, C
 define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [Combination value] env 0))
 
 
--- >>> runParser program "(define third \n (lambda (p) \n (fst (snd (snd p))) \n ) \n )"
--- [([Combination [Symbol "define",Symbol "third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]]]],"")]
+-- >>> runParser program "(define third \n (lambda (p) \n (fst (snd (snd p))) \n ) \n ) \n (define xs \n (cons 1 (cons 2 (cons 3 nil)))) \n (third xs) \n (third '(3 4 5)) \n (third (cons 10 (cons 11 (cons 12 (cons 13 (cons 14 nil))))))"
+-- [([Combination [Symbol "define",Symbol "third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]]],Combination [Symbol "define",Symbol "xs",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]],Combination [Symbol "third",Symbol "xs"],Combination [Symbol "third",Combination [Symbol "quote",Combination [Constant 3,Constant 4,Constant 5]]],Combination [Symbol "third",Combination [Symbol "cons",Constant 10,Combination [Symbol "cons",Constant 11,Combination [Symbol "cons",Constant 12,Combination [Symbol "cons",Constant 13,Combination [Symbol "cons",Constant 14,Symbol "nil"]]]]]]],"")]
+
+-- >>> eval [Combination [Symbol "define",Symbol "third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]]],Combination [Symbol "define",Symbol "xs",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]],Combination [Symbol "third",Symbol "xs"],Combination [Symbol "third",Combination [Symbol "quote",Combination [Constant 3,Constant 4,Constant 5]]],Combination [Symbol "third",Combination [Symbol "cons",Constant 10,Combination [Symbol "cons",Constant 11,Combination [Symbol "cons",Constant 12,Combination [Symbol "cons",Constant 13,Combination [Symbol "cons",Constant 14,Symbol "nil"]]]]]]] (Env []) 0
+-- [Symbol "",Symbol "",Constant 3,Constant 5,Constant 12]
 
 -- >>> define [Symbol "third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]]] (Env [])
 -- (Symbol "",Env [("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])])
@@ -446,11 +448,11 @@ define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [C
 -- >>> define [Symbol "xs",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]] (Env [("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])])
 -- (Symbol "",Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])])
 
--- >>> runParser program "(third (cons 10 (cons 11 (cons 12 (cons 13 (cons 14 nil))))))"
--- [([Combination [Symbol "third",Combination [Symbol "cons",Constant 10,Combination [Symbol "cons",Constant 11,Combination [Symbol "cons",Constant 12,Combination [Symbol "cons",Constant 13,Combination [Symbol "cons",Constant 14,Symbol "nil"]]]]]]],"")]
+-- >>> runParser program "(third xs)"
+-- [([Combination [Symbol "third",Symbol "xs"]],"")]
 
--- >>> eval [Combination [Symbol "third",Combination [Symbol "cons",Constant 10,Combination [Symbol "cons",Constant 11,Combination [Symbol "cons",Constant 12,Combination [Symbol "cons",Constant 13,Combination [Symbol "cons",Constant 14,Symbol "nil"]]]]]]] (Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])]) 0
--- [Constant 12]
+-- >>> eval [Combination [Symbol "third",Symbol "xs"]] (Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])]) 0
+-- [Constant 3]
 
 -- >>> combinationEval [Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]],Symbol "xs"] (Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])]) 0
 -- (Constant 3,Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])])
@@ -463,21 +465,6 @@ define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [C
 
 -- >>> binding [Combination (Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]] : [Combination [Constant 1,Constant 2,Constant 3]])] (Env [])
 -- (Constant 3,Env [])
-
-
-
--- >>> runParser program "(third '(3 4 5))"
--- [([Combination [Symbol "third",Combination [Symbol "quote",Combination [Constant 3,Constant 4,Constant 5]]]],"")]
-
--- >>> eval [Combination [Symbol "third",Combination [Symbol "quote",Combination [Constant 3,Constant 4,Constant 5]]]] (Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])]) 0
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(265,1)-(291,64): Non-exhaustive patterns in function combinationEval
-
--- third = Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]]
-
--- >>> eval [Combination (Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]] : [Combination [Symbol "quote",Combination [Constant 3,Constant 4,Constant 5]]])]  (Env []) 0
--- [Constant 5]
-
-
 
 
 
