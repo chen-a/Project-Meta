@@ -413,15 +413,23 @@ binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody
         getEnv (Lambda vars body values, Env e) = Env e
         getEnv (Macro vars body values, Env e) = Env e
 
+-- >>> runParser program "((macro (x) x) 'x)"
+-- [([Combination [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Combination [Symbol "quote",Symbol "x"]]],"")]
+
+-- >>> eval [Combination [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Combination [Symbol "quote",Symbol "x"]]] (Env []) 0
+-- [Symbol "x"]
+
+
+
 -- >>> runParser program "((macro (x) '$x) 1) \n ((macro (x) ''$$x) y) \n ((macro (x) ''$x) y) "
 -- [([Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "splice",Symbol "x"]]],Constant 1],Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]],Symbol "y"],Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Symbol "x"]]]],Symbol "y"]],"")]
 
 -- >>> map printEval (eval [Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "splice",Symbol "x"]]],Constant 1],Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]],Symbol "y"],Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Symbol "x"]]]],Symbol "y"]] (Env []) 0)
--- ["1","(quote y)","(quote x)"]
+-- ["1","y","x"]
 
 
 createBinding :: [Expr] -> Environment -> (Expr, Environment) -- creates and returns a lambda expression type from parsed line
-createBinding (Combination (Symbol "macro" : Combination vars : body) : values) env = (Macro vars (firstExpr body) (eval values env 0), env) 
+createBinding (Combination (Symbol "macro" : Combination vars : body) : values) env = (Macro vars (firstExpr body) (eval values env 0), env) -- 
 
 createBinding (Combination (Symbol "lambda" : Combination vars : body) : values) env = (Lambda vars (firstExpr body) values, env) 
 createBinding (Combination (Symbol "lambda" : vars : [body]): values) env = (Lambda [vars] body [Combination values], env)
@@ -485,12 +493,15 @@ quote2 [Symbol s] env 0 =  (envLookup env s, env)
 quote2 [Symbol s] env n = (Symbol s, env)
 quote2 [Combination xs] env 0 = (firstExpr (eval2 [Combination xs] env 0), env)
 quote2 [Combination [Symbol "splice", x]] env n = quote2 [x] env (n - 1)
-quote2 [Combination [Symbol "quote", x]] env n = let (ex, en) = quote2 [x] env (n + 1) in (Combination [Symbol "quote", ex], env)
+quote2 [Combination [Symbol "quote", x]] env n = quote2 [x] env (n + 1)--let (ex, en) quote2 [x] env (n + 1) in (Combination [Symbol "quote", ex], env)
 quote2 [Combination (x:xs)] env n = let ex = eval2 xs env n in (Combination (x:ex), env)
 quote2 [Dot xs x] env n = (Dot xs x, env)
 
--- >>> runParser program "((macro (x) ''$$x) y)"
--- [([Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]],Symbol "y"]],"")]
+-- >>> runParser program "'''$$$x"
+-- [([Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]]]],"")]
+
+-- >>> eval [Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]]]] (Env []) 0
+-- [Combination [Symbol "quote",Combination [Symbol "quote",Symbol "x"]]]
 
 -- body = Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]
 

@@ -2,13 +2,18 @@
     (macro (args)
         (if (eq? args nil)
             #t 
-            if (fst args)
+            if (eq? (snd args) nil)
+                (args)
+                if (fst args)
                 (and (snd args)
                 #f))))
 
-(define or 
+(define and 
     (macro (args)
         (if (eq? args nil)
             #f
-            if (fst args)
-                #t)))
+            if (eq? (snd args) nil)
+                (args)
+                if (fst args)
+                (and (snd args)
+                #f))))
