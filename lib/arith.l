@@ -6,10 +6,9 @@
 
 (define -
     (lambda (args)
-        (if (eq? args nil)
-            0
-            (sub (fst args) (- (snd args))))))
-
+        if (eq? (snd args) nil)
+            sub 0 (fst args)
+            ())))
 (define -                           -- not finished (should only deal with lists as args)
     (lambda (args)
         (if (list? args)
