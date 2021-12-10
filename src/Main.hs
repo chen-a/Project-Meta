@@ -248,7 +248,6 @@ eval [] env l = []
 eval ((Boolean b) : xs) env l = Boolean b : eval xs env l
 eval ((Constant n) : xs) env l = Constant n : eval xs env l
 eval ((Symbol s) : xs) env l = Symbol s : eval xs env l
-eval [Combination [Symbol e1, Symbol e2]] env l = (eval [Combination (envLookup env e1 : [envLookup env e2])] env l)
 eval [Combination (Combination x : ys)] env l = [resultExpr (binding [Combination (Combination x : ys)] env)]
 eval (Combination (Combination x:ys):rest) env l = resultExpr (binding [Combination (Combination x:ys)] env) : eval rest env l
 eval ((Combination x) : xs) env l = resultExpr result : eval xs (resultEnv result) l
@@ -458,7 +457,6 @@ define [Symbol var, Combination value] env = envAdd env (var, firstExpr (eval [C
 
 -- >>> eval [Combination [Symbol "third",Symbol "xs"]] (Env [("xs",Combination [Constant 1,Constant 2,Constant 3]),("third",Combination [Symbol "lambda",Combination [Symbol "p"],Combination [Symbol "fst",Combination [Symbol "snd",Combination [Symbol "snd",Symbol "p"]]]])]) 0
 -- ProgressCancelledException
-
 
 binding :: [Expr] -> Environment -> (Expr, Environment)
 binding [Combination (Combination args : xs)] env = binding (Combination args : xs) env
