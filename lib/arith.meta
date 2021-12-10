@@ -10,7 +10,7 @@
             0
             (sub (fst args) (- (snd args))))))
 
-(define -
+(define -                           -- not finished (should only deal with lists as args)
     (lambda (args)
         (if (list? args)
             (if (eq? args nil)
@@ -24,7 +24,7 @@
             1
             (mult (fst args) (* (snd args))))))
 
-(define /
+(define /                        -- not finished (should only deal with lists as args)
     (lambda (args)
         (if (list? args)
             (if (eq? args nil)

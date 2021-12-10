@@ -413,20 +413,12 @@ binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody
         getEnv (Lambda vars body values, Env e) = Env e
         getEnv (Macro vars body values, Env e) = Env e
 
--- >>> runParser program "((macro (x) x) 'x)"
--- [([Combination [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Combination [Symbol "quote",Symbol "x"]]],"")]
+-- >>> runParser program "((macro (x) '$x) 1) \n ((macro (x) ''$$x) y) \n ((macro (x) ''$x) y) "
+-- [([Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "splice",Symbol "x"]]],Constant 1],Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]],Symbol "y"],Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Symbol "x"]]]],Symbol "y"]],"")]
 
--- >>> eval [Combination [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Combination [Symbol "quote",Symbol "x"]]] (Env []) 0
--- [Combination [Symbol "quote",Symbol "x"]]
+-- >>> map printEval (eval [Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "splice",Symbol "x"]]],Constant 1],Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]],Symbol "y"],Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Symbol "x"]]]],Symbol "y"]] (Env []) 0)
+-- ["1","(quote y)","(quote x)"]
 
--- >>> createBinding [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Combination [Symbol "quote",Symbol "x"]] (Env [])
--- (Macro [Symbol "x"] (Symbol "x") [Symbol "x"],Env [])
-
--- >>> eval [Combination [Symbol "quote",Symbol "x"]] (Env []) 0
--- [Symbol "x"]
-
--- >>> binding [Combination [Combination [Symbol "macro",Combination [Symbol "x"],Symbol "x"],Constant 1]] (Env [])
--- (Constant 1,Env [])
 
 createBinding :: [Expr] -> Environment -> (Expr, Environment) -- creates and returns a lambda expression type from parsed line
 createBinding (Combination (Symbol "macro" : Combination vars : body) : values) env = (Macro vars (firstExpr body) (eval values env 0), env) 
@@ -456,7 +448,58 @@ eval2 [] env l = []
 eval2 ((Boolean b) : xs) env l = Boolean b : eval2 xs env l
 eval2 ((Constant n) : xs) env l = Constant n : eval2 xs env l
 eval2 ((Symbol s) : xs) env l = envLookup env s : eval2 xs env l
-eval2 [Combination (Combination (Symbol "lambda" : xs) : ys)] env 1 = [resultExpr (binding [Combination (Combination (Symbol "lambda" : xs) : ys)] env)]
+eval2 [Combination (Combination (Symbol "lambda" : xs) : ys)] env l = [resultExpr (binding [Combination (Combination (Symbol "lambda" : xs) : ys)] env)]
 eval2 ((Combination x) : xs) env l = (resultExpr result) : (eval2 xs (resultEnv result) l)
     where
-        result = combinationEval x env l
+        result = combinationEval2 x env l
+
+combinationEval2 :: [Expr] -> Environment -> Int -> (Expr, Environment) 
+combinationEval2 [Constant x] env l = (Constant x, env)
+combinationEval2 [Combination e1, Symbol e2] env l = binding [Combination e1, Symbol e2] env
+combinationEval2 [Combination e1, Combination e2] env l = binding [Combination e1, Combination e2] env
+combinationEval2 ((Symbol s) : xs) env l
+    --intrinsics
+    | s == "eq?" = equality xs env
+    | s == "add" = add xs env
+    | s == "sub" = sub xs env
+    | s == "mul" = mult xs env
+    | s == "div" = divide xs env
+    | s == "cons" = cons xs env
+    | s == "fst" = first xs env
+    | s == "snd" = second xs env
+    | s == "number?" = number xs env
+    | s == "pair?" = pair xs env
+    | s == "list?" = list xs env
+    | s == "function?" = function xs env
+    -- special forms
+    | s == "quote" && l > 0 = let (ex, en) = quote xs env (l+1) in (Combination [Symbol "quote", ex], env)
+    | s == "quote" && l == 0 = quote2 xs env (l+1)
+    | s == "splice" = splice2 xs env (l-1)
+    | s == "if" = conditional xs env
+    | s == "define" = define xs env
+    | otherwise = combinationEval2 ((envLookup env s) : xs) env l
+
+quote2 :: [Expr] -> Environment -> Int -> (Expr, Environment)
+quote2 [Constant x] env n = (Constant x, env)
+quote2 [Symbol s] env 0 =  (envLookup env s, env)
+quote2 [Symbol s] env n = (Symbol s, env)
+quote2 [Combination xs] env 0 = (firstExpr (eval2 [Combination xs] env 0), env)
+quote2 [Combination [Symbol "splice", x]] env n = quote2 [x] env (n - 1)
+quote2 [Combination [Symbol "quote", x]] env n = let (ex, en) = quote2 [x] env (n + 1) in (Combination [Symbol "quote", ex], env)
+quote2 [Combination (x:xs)] env n = let ex = eval2 xs env n in (Combination (x:ex), env)
+quote2 [Dot xs x] env n = (Dot xs x, env)
+
+-- >>> runParser program "((macro (x) ''$$x) y)"
+-- [([Combination [Combination [Symbol "macro",Combination [Symbol "x"],Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]],Symbol "y"]],"")]
+
+-- body = Combination [Symbol "quote",Combination [Symbol "quote",Combination [Symbol "splice",Combination [Symbol "splice",Symbol "x"]]]]
+
+splice2 :: [Expr] -> Environment -> Int -> (Expr, Environment)
+splice2 [Constant x] env n = (Constant x, env)
+splice2 [Symbol s] env 0 = (envLookup env s, env)
+splice2 [Symbol s] env n = (Symbol s, env)
+splice2 [Combination xs] env 0 = (firstExpr (eval2 [Combination xs] env 0), env)
+splice2 [Combination [Symbol "splice", x]] env n = splice2 [x] env (n - 1)
+splice2 [Combination [Symbol "quote", x]] env n = splice2 [x] env (n + 1)
+splice2 [Combination (x:xs)] env n = let ex = eval2 xs env n in (Combination (x:ex), env)
+splice2 [Dot xs x] env n = (Dot xs x, env)

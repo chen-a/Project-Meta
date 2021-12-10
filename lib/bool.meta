@@ -1,0 +1,14 @@
+(define and 
+    (macro (args)
+        (if (eq? args nil)
+            #t 
+            if (fst args)
+                (and (snd args)
+                #f))))
+
+(define or 
+    (macro (args)
+        (if (eq? args nil)
+            #f
+            if (fst args)
+                #t)))
