@@ -171,18 +171,6 @@ goEval s  = do
 
         Right err -> putStrLn ("error: " ++ err)
 
--- >>> filter filterBlanks [Symbol "", Symbol "5", Constant 5, Combination[Symbol "5"]]
--- [Symbol "5",Constant 5,Combination [Symbol "5"]]
-
--- >>> runParser program "#t \n #f"
--- [([Boolean True,Boolean False],"")]
-
--- >>> map printEval (eval [Boolean True,Boolean False] (Env [("k", Constant 5)]))
--- ["#t","#f"]
-
--- >>> eval [Boolean True] (Env [("k", Constant 5)])
--- [Boolean True]
-
 newtype Environment = Env [(String, Expr)] deriving Show
 
 envLookup :: Environment -> String -> Expr
@@ -261,9 +249,6 @@ resultEnv (expr, env) = env
 
 combinationEval :: [Expr] -> Environment -> Int -> (Expr, Environment)
 combinationEval [Constant x] env l = (Constant x, env)
---combinationEval [Combination e1, Symbol e2] env l = binding [Combination e1, Symbol e2] env
---combinationEval [Combination e1, Combination e2] env l = binding [Combination e1, Combination e2] env
---combinationEval [Combination e1, Constant e2] env l = binding [Combination e1, Constant e2] env
 combinationEval [Combination e1, Symbol e2] env l = binding [Combination e1, Symbol e2] env
 combinationEval [Combination e1, Combination e2] env l = binding [Combination e1, Combination e2] env
 combinationEval [Combination e1, Constant e2] env l = binding [Combination e1, Constant e2] env
@@ -307,14 +292,6 @@ equality [Symbol e1, Constant e2] env = equality [envLookup env e1, Constant e2]
 equality [Constant e1, Combination (Symbol "add":xs)] env = equality [Constant e1, getExpr (add xs env)] env
 equality [Combination (Symbol "add":xs), Constant e2] env = equality [getExpr (add xs env), Constant e2] env
 equality [Combination (Symbol "cons":xs), Symbol "nil"] env = equality [firstExpr (eval (Symbol "cons":xs) env 0), Symbol "nil"] env
-
--- [Combination [Symbol "cons",Constant 1,Symbol "nil"], Symbol "nil"]
--- >>> eval [Combination [Symbol "cons",Constant 1,Symbol "nil"], Symbol "nil"] (Env []) 0
--- [Combination [Constant 1],Symbol "nil"]
-
-
--- >>> equality [Combination [Constant 1],Symbol "nil"] (Env [])
--- (Boolean False,Env [])
 
 add, sub, mult, divide :: [Expr] -> Environment -> (Expr, Environment)
 
@@ -386,6 +363,7 @@ list [Constant e] env = (Boolean False, env)
 list [Boolean e] env= (Boolean False, env)
 list [Symbol "nil"] env = (Boolean True, env)
 list [Symbol e] env = list [envLookup env e] env
+list [Symbol e1, Symbol e2] env = list [getExpr (combinationEval [Symbol e1, Symbol e2] env 0)] env
 list [Combination e] env = list e env
 list (x:xs) env = (Boolean True, env)
 
@@ -454,14 +432,27 @@ binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody
 -- (Symbol "",Env [("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
 
 -- >>> combinationEval [Combination [Symbol "compose",Symbol "list?",Symbol "fst"],Symbol "l"] (Env [("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]) 0
--- (Boolean True,Env [("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
+-- (Boolean False,Env [("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
 
 
 -- >>> createBinding [Combination [Symbol "compose",Symbol "list?",Symbol "fst"],Symbol "l"] (Env [("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
 -- (Lambda [Symbol "x"] (Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]) [Combination [Constant 1,Constant 2,Constant 3]],Env [("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
 
+-- >>> defineBinding [Symbol "x"] [Combination [Constant 1,Constant 2,Constant 3]] (Env [("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
+-- Env [("x",Combination [Constant 1,Constant 2,Constant 3]),("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]
+
+-- >>> eval2 [Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]] (Env [("x",Combination [Constant 1,Constant 2,Constant 3]),("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]) 0
+-- [Boolean True]
+
+-- >>> combinationEval [Symbol "list?",Combination [Symbol "g",Symbol "x"]] (Env [("x",Combination [Constant 1,Constant 2,Constant 3]),("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]) 0
+-- (Boolean True,Env [("x",Combination [Constant 1,Constant 2,Constant 3]),("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
 
 
+-- >>> eval [Combination [Symbol "fst", Symbol "l"]] (Env [("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]) 0
+-- [Constant 1]
+
+-- >>> eval [Combination [Symbol "list?", Constant 1]] (Env [("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]) 0
+-- [Boolean False]
 
 
 
@@ -475,7 +466,7 @@ binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody
 -- (Symbol "",Env [("null?",Combination [Symbol "lambda",Combination [Symbol "lst"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "lst",Symbol "nil"],Boolean True,Boolean False]])])
 
 -- >>> combinationEval [Combination [Symbol "length",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]]]  (Env [("null?",Combination [Symbol "lambda",Combination [Symbol "lst"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "lst",Symbol "nil"],Boolean True,Boolean False]]),("length",Combination [Symbol "lambda",Combination [Symbol "lst"],Combination [Symbol "if",Combination [Symbol "null?",Symbol "lst"],Constant 0,Combination [Symbol "add",Constant 1,Combination [Symbol "length",Combination [Symbol "snd",Symbol "lst"]]]]])]) 0
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(263,1)-(291,64): Non-exhaustive patterns in function combinationEval
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(251,1)-(276,64): Non-exhaustive patterns in function combinationEval
 
 -- >>> createBinding [Combination [Symbol "lambda",Combination [Symbol "lst"],Combination [Symbol "if",Combination [Symbol "null?",Symbol "lst"],Constant 0,Combination [Symbol "add",Constant 1,Combination [Symbol "length",Combination [Symbol "snd",Symbol "lst"]]]]], Combination [Symbol "length",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]]] (Env [("null?",Combination [Symbol "lambda",Combination [Symbol "lst"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "lst",Symbol "nil"],Boolean True,Boolean False]]),("length",Combination [Symbol "lambda",Combination [Symbol "lst"],Combination [Symbol "if",Combination [Symbol "null?",Symbol "lst"],Constant 0,Combination [Symbol "add",Constant 1,Combination [Symbol "length",Combination [Symbol "snd",Symbol "lst"]]]]])])
 -- (Lambda [Symbol "lst"] (Combination [Symbol "if",Combination [Symbol "null?",Symbol "lst"],Constant 0,Combination [Symbol "add",Constant 1,Combination [Symbol "length",Combination [Symbol "snd",Symbol "lst"]]]]) [Combination [Symbol "length",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]]],Env [("null?",Combination [Symbol "lambda",Combination [Symbol "lst"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "lst",Symbol "nil"],Boolean True,Boolean False]]),("length",Combination [Symbol "lambda",Combination [Symbol "lst"],Combination [Symbol "if",Combination [Symbol "null?",Symbol "lst"],Constant 0,Combination [Symbol "add",Constant 1,Combination [Symbol "length",Combination [Symbol "snd",Symbol "lst"]]]]])])
