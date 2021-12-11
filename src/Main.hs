@@ -463,14 +463,17 @@ binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody
 
 
 
--- >>> runParser program "(((curry add) 1) 2)"
--- [([Combination [Combination [Combination [Symbol "curry",Symbol "add"],Constant 1],Constant 2]],"")]
+-- >>> runParser program "(((curry sub) 2) 1)"
+-- [([Combination [Combination [Combination [Symbol "curry",Symbol "sub"],Constant 2],Constant 1]],"")]
+
+-- >>> eval [Combination [Combination [Combination [Symbol "curry",Symbol "sub"],Constant 2],Constant 1]] (Env [("curry",Combination [Symbol "lambda",Combination [Symbol "f"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "f",Symbol "x",Symbol "y"]]]])]) 0
+-- [Constant 1]
 
 -- >>> define [Symbol "curry",Combination [Symbol "lambda",Combination [Symbol "f"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "f",Symbol "x",Symbol "y"]]]]] (Env [])
 -- (Symbol "",Env [("curry",Combination [Symbol "lambda",Combination [Symbol "f"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "f",Symbol "x",Symbol "y"]]]])])
 
 -- >>> combinationEval [Combination [Combination [Symbol "curry",Symbol "add"],Constant 1],Constant 2] (Env [("curry",Combination [Symbol "lambda",Combination [Symbol "f"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "f",Symbol "x",Symbol "y"]]]])]) 0
--- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(477,1)-(486,166): Non-exhaustive patterns in function createBinding
+-- (Constant 3,Env [("x",Constant 1),("f",Symbol "add"),("curry",Combination [Symbol "lambda",Combination [Symbol "f"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "f",Symbol "x",Symbol "y"]]]])])
 
 -- >>> 
 
@@ -488,6 +491,9 @@ createBinding (Combination (Combination (Combination (Symbol "lambda" : Combinat
     where
         outerEnv = defineBinding (outervars ++ middlevars) (outervalues ++ middlevalues) env
 createBinding (Combination (Symbol e1 : [Symbol e2]) : [Symbol e3]) env = createBinding (Combination (envLookup env e1 : [envLookup env e2]) : [envLookup env e3]) env
+createBinding ((Combination  (Combination (Symbol e1 : [Symbol e2]) : middlevalues)) : outervalues) env = createBinding ((Combination  (Combination (envLookup env e1 : [Symbol e2]) : middlevalues)) : outervalues) env 
+
+-- [Combination [Combination [Symbol "curry",Symbol "add"],Constant 1],Constant 2]
 
 defineBinding :: [Expr] -> [Expr] -> Environment -> Environment -- returns environment after it defines all arguments with their values
 defineBinding [] [] env = env
