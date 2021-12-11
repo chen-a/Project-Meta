@@ -6,11 +6,11 @@
 
 (define -
     (lambda (args)
-        if (eq? (snd args) nil)
-            sub 0 (fst args)
+        (if (eq? (snd args) nil)
+            (sub 0 (fst args)
             (if (eq? (snd (snd args)) nil)
                 (sub (fst args) (fst (snd args)))
-                (- (fst args) (+ (snd args))))))
+                (- (fst args) (+ (snd args))))))))
 
 
 (define *
