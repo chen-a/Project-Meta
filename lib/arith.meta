@@ -12,17 +12,8 @@
                 (sub (fst args) (fst (snd args)))
                 (- (fst args) (+ (snd args))))))))
 
-
 (define *
     (lambda (args)
         (if (eq? args nil)
             1
             (mult (fst args) (* (snd args))))))
-
-(define /
-    (lambda (args)
-        if (eq? (snd args) nil)
-            div 1 (fst args)
-            (if (eq? (snd (snd args)) nil)
-                (div (fst args) (fst (snd args)))
-                (/ (fst args) (* (snd args))))))
