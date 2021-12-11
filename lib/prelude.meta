@@ -32,4 +32,4 @@
 
 (define let
   (macro (binding body)
-    {(lambda ($(fst binding)) $body) $(fst (snd binding))}))
+      {(lambda ($(fst binding)) $body) $(fst (snd binding))}))
