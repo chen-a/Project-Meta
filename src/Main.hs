@@ -259,6 +259,8 @@ resultExpr (expr, env) = expr
 resultEnv :: (Expr, Environment) -> Environment
 resultEnv (expr, env) = env
 
+-- [Combination [Combination [Symbol "f",Symbol "x"],Symbol "x"]]
+
 combinationEval :: [Expr] -> Environment -> Int -> (Expr, Environment)
 combinationEval [Constant x] env l = (Constant x, env)
 combinationEval [Combination e1, Symbol e2] env l = binding [Combination e1, Symbol e2] env
@@ -317,6 +319,7 @@ sub [Constant e1, Combination e2] env = sub [Constant e1, firstExpr (eval [Combi
 sub [Combination e1, Constant e2] env = sub [firstExpr (eval [Combination e1] env 0), Constant e2] env
 sub [Combination e1, Combination e2] env = sub [firstExpr (eval [Combination e1] env 0), firstExpr (eval [Combination e2] env 0)] env
 sub [Symbol e1, Constant e2] env = sub [envLookup env e1, Constant e2] env
+sub [Symbol e1, Symbol e2] env = sub [envLookup env e1, envLookup env e2] env
 sub [Constant e1, Symbol e2] env = sub [Constant e1, envLookup env e2] env
 
 
@@ -428,46 +431,34 @@ binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody
         getEnv (Lambda vars body values, Env e) = Env e
         getEnv (Macro vars body values, Env e) = Env e
 
--- >>> runParser program "(define zero (lambda (n) (if (eq? n 0) n (zero (sub n 1)))))"
--- [([Combination [Symbol "define",Symbol "zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]]]],"")]
+-- >>> runParser program "((lambda (f x) ((f x) x)) (lambda (x) (lambda (y) (add x y))) 2)"
+-- [([Combination [Combination [Symbol "lambda",Combination [Symbol "f",Symbol "x"],Combination [Combination [Symbol "f",Symbol "x"],Symbol "x"]],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]]],Constant 2]],"")]
 
--- >>> define [Symbol "zero", Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]]] (Env [])
--- (Symbol "",Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+-- >>> eval [Combination [Combination [Symbol "lambda",Combination [Symbol "f",Symbol "x"],Combination [Combination [Symbol "f",Symbol "x"],Symbol "x"]],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]]],Constant 2]] (Env []) 0
+-- [Constant 4]
 
--- >>> binding [Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]], Constant 1] (Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
--- (Constant 0,Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+-- >>> createBinding [Combination [Symbol "lambda",Combination [Symbol "f",Symbol "x"],Combination [Combination [Symbol "f",Symbol "x"],Symbol "x"]],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]]],Constant 2] (Env [])
+-- (Lambda [Symbol "f",Symbol "x"] (Combination [Combination [Symbol "f",Symbol "x"],Symbol "x"]) [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]]],Constant 2],Env [])
 
--- >>> createBinding [Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]], Constant 1] (Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
--- (Lambda [Symbol "n"] (Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]) [Constant 1],Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+-- >>> defineBinding [Symbol "f",Symbol "x"] [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]]],Constant 2] (Env [])
+-- Env [("x",Constant 2),("f",Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]]])]
 
--- >>> defineBinding [Symbol "n"] [Constant 1] (Env [("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
--- Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]
+-- >>> eval2 [Combination [Combination [Symbol "f",Symbol "x"],Symbol "x"]] (Env [("x",Constant 2),("f",Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]]])]) 0
+-- [Constant 4]
 
--- >>> eval2 [(Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]])] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]) 0
--- [Constant 0]
+-- >>> combinationEval2 [Symbol "f",Symbol "x",Symbol "x"] (Env [("x",Constant 2),("f",Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]])]) 0
+-- (Constant 4,Env [("x",Constant 2),("f",Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]])])
 
--- >>> conditional [Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
--- (Constant 0,Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+-- >>> createBinding [Combination [Combination [Symbol "f",Symbol "x"],Symbol "x"]] (Env [("x",Constant 2),("f",Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "lambda",Combination [Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]]])])
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(464,1)-(473,166): Non-exhaustive patterns in function createBinding
 
--- >>> equality [Symbol "n",Constant 0] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
--- (Boolean False,Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
+-- >>> defineBinding [Symbol "x",Symbol "y"] [Constant 2,Constant 2] (Env [("x",Constant 2),("f",Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]])])
+-- Env [("y",Constant 2),("x",Constant 2),("f",Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]])]
 
--- conditional [Boolean False, x, y] env = (firstExpr (eval2 [y] env 0), env) 
+-- >>> combinationEval2 [Symbol "add",Symbol "x",Symbol "y"] (Env [("y",Constant 2),("x",Constant 2),("f",Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]])]) 0
+-- (Constant 4,Env [("y",Constant 2),("x",Constant 2),("f",Combination [Symbol "lambda",Combination [Symbol "x",Symbol "y"],Combination [Symbol "add",Symbol "x",Symbol "y"]])])
 
--- >>> eval2 [Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]) 0
--- [Constant 0]
-
--- >>> combinationEval [Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]], Combination [Symbol "sub",Symbol "n",Constant 1]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]) 0
--- (Constant 0,Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
-
--- >>> createBinding [Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]], Combination [Symbol "sub",Symbol "n",Constant 1]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
--- (Lambda [Symbol "n"] (Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]) [Combination [Symbol "sub",Symbol "n",Constant 1]],Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
-
--- >>> defineBinding [Symbol "n"] [Combination [Symbol "sub",Symbol "n",Constant 1]] (Env [("n",Constant 1),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])])
--- Env [("n",Constant 0),("zero",Combination [Symbol "lambda",Combination [Symbol "n"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "n",Constant 0],Symbol "n",Combination [Symbol "zero",Combination [Symbol "sub",Symbol "n",Constant 1]]]])]
-
-
-
+-- [Combination [Symbol "f",Symbol "x"],Symbol "x"]
 
 createBinding :: [Expr] -> Environment -> (Expr, Environment) -- creates and returns a lambda expression type from parsed line
 createBinding (Combination (Symbol "macro" : Combination vars : body) : values) env = (Macro vars (firstExpr body) (eval values env 0), env) -- 
@@ -479,6 +470,7 @@ createBinding ((Combination ((Combination (Symbol "lambda" : Combination vars : 
 createBinding (Combination (Combination (Combination (Symbol "lambda" : Combination outervars : [Combination (Symbol "lambda" : Combination middlevars : [Combination innerlambda])]) : outervalues) : middlevalues ) : innervalues) env = createBinding ((Combination innerlambda) : innervalues) outerEnv
     where
         outerEnv = defineBinding (outervars ++ middlevars) (outervalues ++ middlevalues) env
+createBinding (Combination (Symbol e1 : [Symbol e2]) : [Symbol e3]) env = createBinding (Combination (envLookup env e1 : [envLookup env e2]) : [envLookup env e3]) env
 
 defineBinding :: [Expr] -> [Expr] -> Environment -> Environment -- returns environment after it defines all arguments with their values
 defineBinding [] [] env = env
@@ -517,6 +509,8 @@ combinationEval2 :: [Expr] -> Environment -> Int -> (Expr, Environment)
 combinationEval2 [Constant x] env l = (Constant x, env)
 combinationEval2 [Combination e1, Symbol e2] env l = binding [Combination e1, Symbol e2] env
 combinationEval2 [Combination e1, Combination e2] env l = binding [Combination e1, Combination e2] env
+combinationEval2 [Combination e1, Constant e2] env l = binding [Combination e1, Constant e2] env
+combinationEval2 [Combination e1, Symbol e2, Symbol e3] env l = binding [Combination e1, envLookup env e2, envLookup env e3] env
 combinationEval2 ((Symbol s) : xs) env l
     --intrinsics
     | s == "eq?" = equality xs env

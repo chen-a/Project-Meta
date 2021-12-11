@@ -10,7 +10,7 @@
             sub 0 (fst args)
             (if (eq? (snd (snd args)) nil)
                 (sub (fst args) (fst (snd args)))
-                ()))))
+                (- (fst args) (+ (snd args))))))
 
 
 (define *
@@ -19,10 +19,10 @@
             1
             (mult (fst args) (* (snd args))))))
 
-(define /                        -- not finished (should only deal with lists as args)
+(define /
     (lambda (args)
-        (if (list? args)
-            (if (eq? args nil)
-                1
-                (div (fst args) (/ (snd args))))
-            (div 1 args))))
+        if (eq? (snd args) nil)
+            div 1 (fst args)
+            (if (eq? (snd (snd args)) nil)
+                (div (fst args) (fst (snd args)))
+                (/ (fst args) (* (snd args))))))
