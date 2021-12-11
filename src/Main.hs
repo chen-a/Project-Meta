@@ -422,38 +422,17 @@ binding (Combination args : xs) env = ((evalBinding (getVars newLambda) (getBody
         getEnv (Lambda vars body values, Env e) = Env e
         getEnv (Macro vars body values, Env e) = Env e
 
--- >>> runParser program "((compose list? snd) l)"
--- [([Combination [Combination [Symbol "compose",Symbol "list?",Symbol "snd"],Symbol "l"]],"")]
+-- >>> runParser program "((lambda (f g . args) (f (g (fst (snd args))))) (lambda (x) (add x 1)) (lambda (x) (sub x 1)) 2 3)"
+-- [([Combination [Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g",Symbol ".",Symbol "args"],Combination [Symbol "f",Combination [Symbol "g",Combination [Symbol "fst",Combination [Symbol "snd",Symbol "args"]]]]],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "add",Symbol "x",Constant 1]],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "sub",Symbol "x",Constant 1]],Constant 2,Constant 3]],"")]
 
--- >>> eval [Combination [Combination [Symbol "compose",Symbol "list?",Symbol "snd"],Symbol "l"]] (Env [("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]) 0
--- [Boolean True]
+-- >>> eval [Combination [Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g",Symbol ".",Symbol "args"],Combination [Symbol "f",Combination [Symbol "g",Combination [Symbol "fst",Combination [Symbol "snd",Symbol "args"]]]]],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "add",Symbol "x",Constant 1]],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "sub",Symbol "x",Constant 1]],Constant 2,Constant 3]] (Env []) 0
+-- [Constant 3]
 
--- >>> define [Symbol "l",Combination [Symbol "cons",Constant 1,Combination [Symbol "cons",Constant 2,Combination [Symbol "cons",Constant 3,Symbol "nil"]]]] (Env [("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
--- (Symbol "",Env [("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
+-- >>> createBinding [Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g",Symbol ".",Symbol "args"],Combination [Symbol "f",Combination [Symbol "g",Combination [Symbol "fst",Combination [Symbol "snd",Symbol "args"]]]]],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "add",Symbol "x",Constant 1]],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "sub",Symbol "x",Constant 1]],Constant 2,Constant 3] (Env [])
+-- (Lambda [Symbol "f",Symbol "g",Symbol ".",Symbol "args"] (Combination [Symbol "f",Combination [Symbol "g",Combination [Symbol "fst",Combination [Symbol "snd",Symbol "args"]]]]) [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "add",Symbol "x",Constant 1]],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "sub",Symbol "x",Constant 1]],Constant 2,Constant 3],Env [])
 
--- >>> combinationEval [Combination [Symbol "compose",Symbol "list?",Symbol "fst"],Symbol "l"] (Env [("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]) 0
--- (Boolean False,Env [("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
-
-
--- >>> createBinding [Combination [Symbol "compose",Symbol "list?",Symbol "fst"],Symbol "l"] (Env [("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
--- (Lambda [Symbol "x"] (Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]) [Combination [Constant 1,Constant 2,Constant 3]],Env [("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
-
--- >>> defineBinding [Symbol "x"] [Combination [Constant 1,Constant 2,Constant 3]] (Env [("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
--- Env [("x",Combination [Constant 1,Constant 2,Constant 3]),("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]
-
--- >>> eval2 [Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]] (Env [("x",Combination [Constant 1,Constant 2,Constant 3]),("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]) 0
--- [Boolean True]
-
--- >>> combinationEval [Symbol "list?",Combination [Symbol "g",Symbol "x"]] (Env [("x",Combination [Constant 1,Constant 2,Constant 3]),("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]) 0
--- (Boolean True,Env [("x",Combination [Constant 1,Constant 2,Constant 3]),("g",Symbol "fst"),("f",Symbol "list?"),("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])])
-
-
--- >>> eval [Combination [Symbol "fst", Symbol "l"]] (Env [("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]) 0
--- [Constant 1]
-
--- >>> eval [Combination [Symbol "list?", Constant 1]] (Env [("l",Combination [Constant 1,Constant 2,Constant 3]),("compose",Combination [Symbol "lambda",Combination [Symbol "f",Symbol "g"],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "f",Combination [Symbol "g",Symbol "x"]]]])]) 0
--- [Boolean False]
-
+-- >>> defineBinding [Symbol "f",Symbol "g",Symbol ".",Symbol "args"] [Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "add",Symbol "x",Constant 1]],Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "sub",Symbol "x",Constant 1]],Constant 2,Constant 3] (Env [])
+-- Env [("args",Combination [Constant 2,Constant 3]),("g",Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "sub",Symbol "x",Constant 1]]),("f",Combination [Symbol "lambda",Combination [Symbol "x"],Combination [Symbol "add",Symbol "x",Constant 1]])]
 
 
 
@@ -508,6 +487,7 @@ createBinding (Combination (Symbol e1 : Symbol e2 : [Symbol e3]) : [Symbol e4]) 
 defineBinding :: [Expr] -> [Expr] -> Environment -> Environment -- returns environment after it defines all arguments with their values
 defineBinding [] [] env = env
 defineBinding [] (v : vs) env = getEnv (envAdd env ("neveraccessthis", Combination (v:vs)))
+defineBinding (Symbol "." : xs) (v : vs) env = defineBinding xs [Combination (v : vs)] env
 defineBinding [Symbol e] (v : vs) env =  updateOrAdd e v env
     where
         updateOrAdd s v env =
