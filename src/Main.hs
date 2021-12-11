@@ -488,13 +488,11 @@ defineBinding :: [Expr] -> [Expr] -> Environment -> Environment -- returns envir
 defineBinding [] [] env = env
 defineBinding [] (v : vs) env = getEnv (envAdd env ("neveraccessthis", Combination (v:vs)))
 defineBinding (Symbol "." : xs) (v : vs) env = defineBinding xs [Combination (v : vs)] env
-defineBinding [Symbol "args"] (v : vs) env = getEnv (envAdd env ("args", Combination (v : vs)))
 defineBinding [Symbol e] (v : vs) env =  updateOrAdd e v env
     where
         updateOrAdd s v env =
             if compareExpr (envLookup env s) (Symbol "error") then (getEnv (envAdd env (e, v)))
                                                               else (getEnv (envUpdate env s (firstExpr (eval2 [v] env 0))))
-defineBinding (Symbol "args" : []) (v : vs) env = defineBinding [Symbol "args"] [Combination (v : vs)] env
 defineBinding (Symbol e: xs) (v : vs) env = defineBinding xs vs (updateOrAdd e v env)
     where
         updateOrAdd s v env =
@@ -587,7 +585,16 @@ splice2 [Dot xs x] env n = (Dot xs x, env)
 -- >>> defineBinding [Symbol "args"] [Constant 1, Constant 2] (Env [])
 -- Env [("args",Combination [Constant 1,Constant 2])]
 
+-- >>> eval2 [Combination [Symbol "if",Combination [Symbol "eq?",Symbol "args",Symbol "nil"],Constant 0,Combination [Symbol "add",Combination [Symbol "fst",Symbol "args"],Combination [Symbol "+",Combination [Symbol "snd",Symbol "args"]]]]] (Env [("args", Combination[Constant 1, Constant 2]),("+",Combination [Symbol "lambda",Combination [Symbol "args"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "args",Symbol "nil"],Constant 0,Combination [Symbol "add",Combination [Symbol "fst",Symbol "args"],Combination [Symbol "+",Combination [Symbol "snd",Symbol "args"]]]]])]) 0
+-- /home/vscode/github-classroom/Iowa-CS-3820-Fall-2021/project-meta-meta-team/src/Main.hs:(282,1)-(294,132): Non-exhaustive patterns in function equality
 
--- >>> eval2 [Combination [Symbol "if",Combination [Symbol "eq?",Symbol "args",Symbol "nil"],Constant 0,Combination [Symbol "add",Combination [Symbol "fst",Symbol "args"],Combination [Symbol "+",Combination [Symbol "snd",Symbol "args"]]]]] (Env [("args", ),("+",Combination [Symbol "lambda",Combination [Symbol "args"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "args",Symbol "nil"],Constant 0,Combination [Symbol "add",Combination [Symbol "fst",Symbol "args"],Combination [Symbol "+",Combination [Symbol "snd",Symbol "args"]]]]])])
+-- >>> equality [Symbol "args"]
 
--- >>> runParser program "(define and (macro (args)(if (eq? args nil) #t  if (eq? (snd args) nil) (args) if (fst args) (and (snd args) #f))))"
+--------------------------------------------------------------------------------------------------------
+
+-- >>> runParser program "(define and (macro (args)(if (eq? args nil) #t  if (eq? (snd args) nil) (args) if (fst args) (and (snd args) #f))))\n(and)"
+-- [([Combination [Symbol "define",Symbol "and",Combination [Symbol "macro",Combination [Symbol "args"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "args",Symbol "nil"],Boolean True,Symbol "if",Combination [Symbol "eq?",Combination [Symbol "snd",Symbol "args"],Symbol "nil"],Combination [Symbol "args"],Symbol "if",Combination [Symbol "fst",Symbol "args"],Combination [Symbol "and",Combination [Symbol "snd",Symbol "args"],Boolean False]]]],Combination [Symbol "and"]],"")]
+
+-- >>> eval [Combination [Symbol "define",Symbol "and",Combination [Symbol "macro",Combination [Symbol "args"],Combination [Symbol "if",Combination [Symbol "eq?",Symbol "args",Symbol "nil"],Boolean True,Symbol "if",Combination [Symbol "eq?",Combination [Symbol "snd",Symbol "args"],Symbol "nil"],Combination [Symbol "args"],Symbol "if",Combination [Symbol "fst",Symbol "args"],Combination [Symbol "and",Combination [Symbol "snd",Symbol "args"],Boolean False]]]],Combination [Symbol "and"]] (Env []) 0
+
+

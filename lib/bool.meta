@@ -15,7 +15,3 @@
             if (fst args)
                 (fst args)
                 (or (snd args)))))
-
-(define cond
-    (macro (args)
-        ))
